@@ -19,18 +19,18 @@ function boxesTouch(a, b) {
 
 // The ball bounces off the left, right, and top walls.
 // (The bottom is not a wall: falling off the bottom resets the ball.)
-function bounceOffWalls() {
-  if (ball.x < 0) {
-    ball.x = 0;
-    ball.vx = -ball.vx;
+function bounceOffWalls(targetBall = ball) {
+  if (targetBall.x < 0) {
+    targetBall.x = 0;
+    targetBall.vx = -targetBall.vx;
   }
-  if (ball.x + ball.width > WIDTH) {
-    ball.x = WIDTH - ball.width;
-    ball.vx = -ball.vx;
+  if (targetBall.x + targetBall.width > WIDTH) {
+    targetBall.x = WIDTH - targetBall.width;
+    targetBall.vx = -targetBall.vx;
   }
-  if (ball.y < 0) {
-    ball.y = 0;
-    ball.vy = -ball.vy;
+  if (targetBall.y < 0) {
+    targetBall.y = 0;
+    targetBall.vy = -targetBall.vy;
   }
 }
 
@@ -38,57 +38,91 @@ function bounceOffWalls() {
 // The ball bounces off the top of the paddle.
 // ball.vy > 0 means "the ball is moving down", so it only bounces
 // when it is falling onto the paddle.
-function bounceOffPaddle() {
-  if (boxesTouch(ball, paddle) && ball.vy > 0) {
-    ball.y = paddle.y - ball.height;  // sit on top of the paddle
-    ball.vy = -ball.vy;
+function bounceOffPaddle(targetBall = ball) {
+  if (boxesTouch(targetBall, paddle) && targetBall.vy > 0) {
+    targetBall.y = paddle.y - targetBall.height;  // sit on top of the paddle
+    targetBall.vy = -targetBall.vy;
+  }
+}
+
+function removeBrick(brick) {
+  const brickIndex = bricks.indexOf(brick);
+  if (brickIndex === -1) {
+    return false;
+  }
+
+  bricks.splice(brickIndex, 1);
+  score += 10;
+
+  for (let i = 0; i < 12; i++) {
+    particles.push({
+      x: brick.x + brick.width / 2,
+      y: brick.y + brick.height / 2,
+      vx: (Math.random() - 0.5) * 4,
+      vy: (Math.random() - 0.5) * 4,
+      life: 15
+    });
+  }
+
+  return true;
+}
+
+function explodeTnt(tntBrick) {
+  const neighbors = bricks
+    .filter((brick) =>
+      (brick.row === tntBrick.row && Math.abs(brick.col - tntBrick.col) === 1) ||
+      (brick.col === tntBrick.col && Math.abs(brick.row - tntBrick.row) === 1)
+    )
+    .sort((a, b) => {
+      const directionOrder = (brick) => {
+        if (brick.row === tntBrick.row && brick.col < tntBrick.col) return 0;
+        if (brick.row === tntBrick.row && brick.col > tntBrick.col) return 1;
+        if (brick.row < tntBrick.row) return 2;
+        return 3;
+      };
+      return directionOrder(a) - directionOrder(b);
+    });
+
+  for (const neighbor of neighbors.slice(0, 2)) {
+    removeBrick(neighbor);
   }
 }
 
 
 // The ball bounces off the bricks and removes the one brick it hit.
-function bounceOffBricks() {
+function bounceOffBricks(targetBall = ball) {
   for (const brick of bricks) {
-    if (!boxesTouch(ball, brick)) {
+    if (!boxesTouch(targetBall, brick)) {
       continue;  // not touching this brick, check the next one
     }
 
     // How far has the ball pushed into the brick on each side?
-    const overlapX = Math.min(ball.x + ball.width, brick.x + brick.width) - Math.max(ball.x, brick.x);
-    const overlapY = Math.min(ball.y + ball.height, brick.y + brick.height) - Math.max(ball.y, brick.y);
+    const overlapX = Math.min(targetBall.x + targetBall.width, brick.x + brick.width) - Math.max(targetBall.x, brick.x);
+    const overlapY = Math.min(targetBall.y + targetBall.height, brick.y + brick.height) - Math.max(targetBall.y, brick.y);
 
     if (overlapX < overlapY) {
       // The ball hit the brick's left or right side.
-      ball.vx = -ball.vx;
-      if (ball.x < brick.x) {
-        ball.x = brick.x - ball.width;     // left of the brick
+      targetBall.vx = -targetBall.vx;
+      if (targetBall.x < brick.x) {
+        targetBall.x = brick.x - targetBall.width;     // left of the brick
       } else {
-        ball.x = brick.x + brick.width;    // right of the brick
+        targetBall.x = brick.x + brick.width;    // right of the brick
       }
     } else {
       // The ball hit the brick's top or bottom.
-      ball.vy = -ball.vy;
-      if (ball.y < brick.y) {
-        ball.y = brick.y - ball.height;    // above the brick
+      targetBall.vy = -targetBall.vy;
+      if (targetBall.y < brick.y) {
+        targetBall.y = brick.y - targetBall.height;    // above the brick
       } else {
-        ball.y = brick.y + brick.height;   // below the brick
+        targetBall.y = brick.y + brick.height;    // below the brick
       }
     }
 
-    const brickIndex = bricks.indexOf(brick);
-    if (brickIndex !== -1) {
-      bricks.splice(brickIndex, 1);
-      score = score + 10;
-
-      const burstCount = 12;
-      for (let i = 0; i < burstCount; i++) {
-        particles.push({
-          x: brick.x + brick.width / 2,
-          y: brick.y + brick.height / 2,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.5) * 4,
-          life: 15
-        });
+    if (removeBrick(brick)) {
+      if (brick.powerUp === "multiball") {
+        spawnExtraBalls(targetBall);
+      } else if (brick.powerUp === "tnt") {
+        explodeTnt(brick);
       }
     }
 

@@ -1,6 +1,7 @@
 // Generates an original, gritty instrumental rap beat with the Web Audio API.
 const musicButton = document.getElementById("music-toggle");
 const musicStatus = document.getElementById("music-status");
+const lyricCaption = document.getElementById("lyric-caption");
 const stepLength = 0.125;
 const kickSteps = [0, 6, 8, 11];
 const snareSteps = [4, 12];
@@ -10,6 +11,12 @@ const lyricLines = [
   "Broke as a joke, but I’m finding my groove.",
   "Learning my numbers, my letters, my ABCs.",
   "Breaking those bricks like it’s easy as three."
+];
+const lyricCaptions = [
+  "我叫 Roman，在录音棚里讲笑话。",
+  "穷得像个笑话，但我正找到自己的节奏。",
+  "学数字、学字母，也学我的 ABC。",
+  "打碎那些砖块，轻松得像数到三。"
 ];
 
 let audioContext;
@@ -22,10 +29,14 @@ let noiseBuffer;
 let distortionCurve;
 
 function speakLyricLine() {
-  const utterance = new SpeechSynthesisUtterance(lyricLines[lyricLine]);
+  const lineIndex = lyricLine;
+  const utterance = new SpeechSynthesisUtterance(lyricLines[lineIndex]);
   utterance.rate = 1.18;
   utterance.pitch = 1.08;
   utterance.volume = 0.85;
+  utterance.onstart = function () {
+    lyricCaption.textContent = lyricCaptions[lineIndex];
+  };
   window.speechSynthesis.speak(utterance);
   lyricLine = (lyricLine + 1) % lyricLines.length;
 }
@@ -165,6 +176,7 @@ musicButton.addEventListener("click", async function () {
       if ("speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
+      lyricCaption.textContent = "";
       await audioContext.suspend();
       musicButton.textContent = "Play music";
       musicButton.setAttribute("aria-pressed", "false");

@@ -57,6 +57,7 @@ const paddle = {
 let bricks = [];
 let score = 0;
 const particles = [];
+const extraBalls = [];
 
 
 // ------------------------------------------------------------
@@ -84,21 +85,31 @@ document.addEventListener("keyup", function (event) {
 // ------------------------------------------------------------
 function update() {
   if (bricks.length === 0) {
+    updateParticles();
     return;
   }
 
   movePaddle();
-  moveBall();
+  const activeBalls = [ball, ...extraBalls];
 
-  bounceOffWalls();   // collisions.js
-  bounceOffPaddle();  // collisions.js
-  bounceOffBricks();  // collisions.js
-  updateParticles();
+  for (const activeBall of activeBalls) {
+    moveBall(activeBall);
+    bounceOffWalls(activeBall);   // collisions.js
+    bounceOffPaddle(activeBall);  // collisions.js
+    bounceOffBricks(activeBall);  // collisions.js
+  }
 
-  // The ball fell off the bottom: back to the center.
+  for (let i = extraBalls.length - 1; i >= 0; i--) {
+    if (extraBalls[i].y > HEIGHT) {
+      extraBalls.splice(i, 1);
+    }
+  }
+
   if (ball.y > HEIGHT) {
     resetBall();
   }
+
+  updateParticles();
 }
 
 function movePaddle() {
@@ -118,9 +129,25 @@ function movePaddle() {
   }
 }
 
-function moveBall() {
-  ball.x = ball.x + ball.vx;
-  ball.y = ball.y + ball.vy;
+function moveBall(movingBall = ball) {
+  movingBall.x = movingBall.x + movingBall.vx;
+  movingBall.y = movingBall.y + movingBall.vy;
+}
+
+function spawnExtraBalls(sourceBall) {
+  const speed = Math.hypot(sourceBall.vx, sourceBall.vy);
+  const angle = Math.atan2(sourceBall.vy, sourceBall.vx);
+
+  for (const angleOffset of [-0.45, 0.45]) {
+    extraBalls.push({
+      x: sourceBall.x,
+      y: sourceBall.y,
+      width: sourceBall.width,
+      height: sourceBall.height,
+      vx: Math.cos(angle + angleOffset) * speed,
+      vy: Math.sin(angle + angleOffset) * speed
+    });
+  }
 }
 
 
@@ -165,7 +192,9 @@ function draw() {
 
   ctx.fillStyle = "white";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-  ctx.fillRect(ball.x, ball.y, ball.width, ball.height);
+  for (const activeBall of [ball, ...extraBalls]) {
+    ctx.fillRect(activeBall.x, activeBall.y, activeBall.width, activeBall.height);
+  }
 
   drawBricks();  // bricks.js
   drawParticles();

@@ -49,3 +49,9 @@ button:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 3px;
 }
+
+#lyric-caption {
+  min-height: 1.5em;
+  font-size: 18px;
+  font-weight: bold;
+}
