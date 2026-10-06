@@ -34,3 +34,18 @@ p {
   font-size: 14px;
   line-height: 1.5;
 }
+
+button {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #fff;
+  background: #000;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
