@@ -55,6 +55,8 @@ const paddle = {
 // THE BRICKS (the list is filled in by makeBricks() in bricks.js)
 // ------------------------------------------------------------
 let bricks = [];
+let score = 0;
+const particles = [];
 
 
 // ------------------------------------------------------------
@@ -81,12 +83,17 @@ document.addEventListener("keyup", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
+  if (bricks.length === 0) {
+    return;
+  }
+
   movePaddle();
   moveBall();
 
   bounceOffWalls();   // collisions.js
   bounceOffPaddle();  // collisions.js
   bounceOffBricks();  // collisions.js
+  updateParticles();
 
   // The ball fell off the bottom: back to the center.
   if (ball.y > HEIGHT) {
@@ -121,15 +128,47 @@ function moveBall() {
 // DRAW: paints everything on the canvas. Black background,
 // white shapes.
 // ------------------------------------------------------------
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const particle = particles[i];
+    particle.x = particle.x + particle.vx;
+    particle.y = particle.y + particle.vy;
+    particle.life = particle.life - 1;
+
+    if (particle.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles() {
+  for (const particle of particles) {
+    ctx.fillStyle = "rgba(255, 255, 255, " + particle.life / 15 + ")";
+    ctx.fillRect(particle.x, particle.y, 3, 3);
+  }
+}
+
 function draw() {
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  ctx.fillStyle = "white";
+  ctx.font = "20px sans-serif";
+  ctx.fillText("Score: " + score, 20, 30);
+
+  if (bricks.length === 0) {
+    ctx.font = "40px sans-serif";
+    ctx.fillText("You win!", WIDTH / 2 - 100, HEIGHT / 2);
+    drawParticles();
+    return;
+  }
 
   ctx.fillStyle = "white";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
   ctx.fillRect(ball.x, ball.y, ball.width, ball.height);
 
   drawBricks();  // bricks.js
+  drawParticles();
 }
 
 
