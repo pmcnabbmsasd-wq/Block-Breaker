@@ -58,6 +58,9 @@ let bricks = [];
 let score = 0;
 const particles = [];
 const extraBalls = [];
+const STARTING_RESPAWNS = 4;
+let respawnsLeft = STARTING_RESPAWNS;
+let gameOver = false;
 
 
 // ------------------------------------------------------------
@@ -84,7 +87,7 @@ document.addEventListener("keyup", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
-  if (bricks.length === 0) {
+  if (bricks.length === 0 || gameOver) {
     updateParticles();
     return;
   }
@@ -106,7 +109,13 @@ function update() {
   }
 
   if (ball.y > HEIGHT) {
-    resetBall();
+    if (respawnsLeft > 0) {
+      respawnsLeft--;
+      resetBall();
+    } else {
+      gameOver = true;
+      extraBalls.length = 0;
+    }
   }
 
   updateParticles();
@@ -182,10 +191,22 @@ function draw() {
   ctx.fillStyle = "white";
   ctx.font = "20px sans-serif";
   ctx.fillText("Score: " + score, 20, 30);
+  ctx.fillText("Respawns: " + respawnsLeft, WIDTH - 150, 30);
 
   if (bricks.length === 0) {
     ctx.font = "40px sans-serif";
     ctx.fillText("You win!", WIDTH / 2 - 100, HEIGHT / 2);
+    drawParticles();
+    return;
+  }
+
+  if (gameOver) {
+    ctx.textAlign = "center";
+    ctx.font = "40px sans-serif";
+    ctx.fillText("Game over", WIDTH / 2, HEIGHT / 2 - 15);
+    ctx.font = "18px sans-serif";
+    ctx.fillText("Click to restart", WIDTH / 2, HEIGHT / 2 + 25);
+    ctx.textAlign = "start";
     drawParticles();
     return;
   }
@@ -199,6 +220,23 @@ function draw() {
   drawBricks();  // bricks.js
   drawParticles();
 }
+
+function restartGame() {
+  bricks = makeBricks();
+  score = 0;
+  respawnsLeft = STARTING_RESPAWNS;
+  gameOver = false;
+  extraBalls.length = 0;
+  particles.length = 0;
+  paddle.x = WIDTH / 2 - paddle.width / 2;
+  resetBall();
+}
+
+canvas.addEventListener("click", function () {
+  if (gameOver) {
+    restartGame();
+  }
+});
 
 
 // ------------------------------------------------------------
@@ -230,8 +268,7 @@ function frame(now) {
 }
 
 function start() {
-  bricks = makeBricks();  // bricks.js
-  resetBall();
+  restartGame();
   lastTime = performance.now();
   requestAnimationFrame(frame);
 }
