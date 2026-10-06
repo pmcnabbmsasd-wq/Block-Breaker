@@ -32,10 +32,11 @@ const ball = {
 
 // Put the ball in the center and reset its speed and direction.
 function resetBall() {
+  const ballSpeed = BALL_SPEED + (currentLevel - 1) * 0.35;
   ball.x = WIDTH / 2 - ball.width / 2;
   ball.y = HEIGHT / 2 - ball.height / 2;
-  ball.vx = BALL_SPEED;  // right
-  ball.vy = BALL_SPEED;  // down
+  ball.vx = ballSpeed;  // right
+  ball.vy = ballSpeed;  // down
 }
 
 
@@ -59,8 +60,12 @@ let score = 0;
 const particles = [];
 const extraBalls = [];
 const STARTING_RESPAWNS = 4;
+const TOTAL_LEVELS = 11;
 let respawnsLeft = STARTING_RESPAWNS;
 let gameOver = false;
+let gameWon = false;
+let currentLevel = 1;
+let levelTransitionTicks = 0;
 
 
 // ------------------------------------------------------------
@@ -87,7 +92,23 @@ document.addEventListener("keyup", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
-  if (bricks.length === 0 || gameOver) {
+  if (gameOver || gameWon) {
+    updateParticles();
+    return;
+  }
+
+  if (bricks.length === 0) {
+    if (currentLevel === TOTAL_LEVELS) {
+      gameWon = true;
+    } else if (levelTransitionTicks === 0) {
+      levelTransitionTicks = 90;
+    } else {
+      levelTransitionTicks--;
+      if (levelTransitionTicks === 0) {
+        currentLevel++;
+        startLevel();
+      }
+    }
     updateParticles();
     return;
   }
@@ -192,10 +213,24 @@ function draw() {
   ctx.font = "20px sans-serif";
   ctx.fillText("Score: " + score, 20, 30);
   ctx.fillText("Respawns: " + respawnsLeft, WIDTH - 150, 30);
+  ctx.fillText("Level: " + currentLevel + "/" + TOTAL_LEVELS, WIDTH / 2 - 50, 30);
+
+  if (gameWon) {
+    ctx.textAlign = "center";
+    ctx.font = "40px sans-serif";
+    ctx.fillText("You win!", WIDTH / 2, HEIGHT / 2 - 15);
+    ctx.font = "18px sans-serif";
+    ctx.fillText("Click to play again", WIDTH / 2, HEIGHT / 2 + 25);
+    ctx.textAlign = "start";
+    drawParticles();
+    return;
+  }
 
   if (bricks.length === 0) {
-    ctx.font = "40px sans-serif";
-    ctx.fillText("You win!", WIDTH / 2 - 100, HEIGHT / 2);
+    ctx.textAlign = "center";
+    ctx.font = "36px sans-serif";
+    ctx.fillText("Level " + currentLevel + " complete!", WIDTH / 2, HEIGHT / 2);
+    ctx.textAlign = "start";
     drawParticles();
     return;
   }
@@ -222,18 +257,28 @@ function draw() {
 }
 
 function restartGame() {
-  bricks = makeBricks();
+  currentLevel = 1;
+  levelTransitionTicks = 0;
   score = 0;
   respawnsLeft = STARTING_RESPAWNS;
   gameOver = false;
+  gameWon = false;
   extraBalls.length = 0;
   particles.length = 0;
+  startLevel();
+}
+
+function startLevel() {
+  bricks = makeBricks(currentLevel);
+  levelTransitionTicks = 0;
+  paddle.width = Math.max(60, 90 - (currentLevel - 1) * 3);
   paddle.x = WIDTH / 2 - paddle.width / 2;
+  extraBalls.length = 0;
   resetBall();
 }
 
 canvas.addEventListener("click", function () {
-  if (gameOver) {
+  if (gameOver || gameWon) {
     restartGame();
   }
 });

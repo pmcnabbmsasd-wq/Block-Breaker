@@ -11,14 +11,15 @@ const BRICKS_TOP = 50;   // how far down the first row starts
 
 // Builds the list of bricks. Each brick is an object with an
 // x, y, width, and height.
-function makeBricks() {
+function makeBricks(level = 1) {
   const list = [];
+  const rows = Math.min(BRICK_ROWS + Math.floor((level - 1) / 2), 8);
 
   // Center the whole block of bricks on the screen.
   const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
   const left = (WIDTH - totalWidth) / 2;
 
-  for (let row = 0; row < BRICK_ROWS; row++) {
+  for (let row = 0; row < rows; row++) {
     for (let col = 0; col < BRICK_COLUMNS; col++) {
       list.push({
         x: left + col * (BRICK_WIDTH + BRICK_GAP),
