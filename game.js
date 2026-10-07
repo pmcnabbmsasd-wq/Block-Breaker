@@ -10,6 +10,8 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const grenadeTexture = new Image();
 grenadeTexture.src = "grenade.png";
+const bossTexture = new Image();
+bossTexture.src = "boss.png";
 
 const WIDTH = canvas.width;   // 600
 const HEIGHT = canvas.height; // 450
@@ -64,13 +66,15 @@ let score = 0;
 const particles = [];
 const extraBalls = [];
 const grenadeDrops = [];
+const bossLasers = [];
 const STARTING_RESPAWNS = 15;
-const TOTAL_LEVELS = 11;
+const TOTAL_LEVELS = 16;
 let respawnsLeft = STARTING_RESPAWNS;
 let gameOver = false;
 let gameWon = false;
 let currentLevel = 1;
 let levelTransitionTicks = 0;
+let boss = null;
 
 
 // ------------------------------------------------------------
@@ -102,7 +106,7 @@ function update() {
     return;
   }
 
-  if (bricks.length === 0) {
+  if (bricks.length === 0 && !boss) {
     if (currentLevel === TOTAL_LEVELS) {
       gameWon = true;
     } else if (levelTransitionTicks === 0) {
@@ -119,7 +123,12 @@ function update() {
   }
 
   movePaddle();
-  const activeBalls = [ball, ...extraBalls];
+  if (boss) {
+    updateBoss();
+    updateBossLasers();
+  }
+
+  const activeBalls = boss ? [] : [ball, ...extraBalls];
 
   for (const activeBall of activeBalls) {
     moveBall(activeBall);
@@ -136,7 +145,7 @@ function update() {
     }
   }
 
-  if (ball.y > HEIGHT) {
+  if (!boss && ball.y > HEIGHT) {
     if (respawnsLeft > 0) {
       respawnsLeft--;
       resetBall();
@@ -201,6 +210,103 @@ function updateGrenadeDrops() {
   }
 }
 
+function updateBoss() {
+  boss.x += boss.vx;
+  if (boss.x < 8 || boss.x + boss.width > WIDTH - 8) {
+    boss.x = Math.max(8, Math.min(WIDTH - boss.width - 8, boss.x));
+    boss.vx = -boss.vx;
+  }
+
+  boss.fireCooldown--;
+  if (boss.fireCooldown <= 0) {
+    const bossCenter = boss.x + boss.width / 2;
+    const paddleCenter = paddle.x + paddle.width / 2;
+    bossLasers.push({
+      x: bossCenter - 4,
+      y: boss.y + boss.height,
+      width: 8,
+      height: 18,
+      vx: Math.max(-1.5, Math.min(1.5, (paddleCenter - bossCenter) * 0.006)),
+      vy: 3.8,
+      returned: false
+    });
+    boss.fireCooldown = 82;
+  }
+}
+
+function updateBossLasers() {
+  for (let i = bossLasers.length - 1; i >= 0; i--) {
+    const laser = bossLasers[i];
+    laser.x += laser.vx;
+    laser.y += laser.vy;
+
+    if (laser.x < 0 || laser.x + laser.width > WIDTH) {
+      laser.x = Math.max(0, Math.min(WIDTH - laser.width, laser.x));
+      laser.vx = -laser.vx;
+    }
+
+    if (!laser.returned && boxesTouch(laser, paddle)) {
+      laser.returned = true;
+      laser.vy = -Math.abs(laser.vy);
+      const paddleOffset = laser.x + laser.width / 2 - (paddle.x + paddle.width / 2);
+      laser.vx = Math.max(-2, Math.min(2, paddleOffset * 0.08));
+    } else if (!laser.returned && laser.y > HEIGHT) {
+      respawnsLeft = Math.max(0, respawnsLeft - 1);
+      bossLasers.splice(i, 1);
+      if (respawnsLeft === 0) {
+        gameOver = true;
+        bossLasers.length = 0;
+        return;
+      }
+      continue;
+    }
+
+    if (laser.returned && boxesTouch(laser, boss)) {
+      boss.health--;
+      bossLasers.splice(i, 1);
+      if (boss.health <= 0) {
+        boss = null;
+        bossLasers.length = 0;
+        return;
+      }
+      continue;
+    }
+
+    if (laser.returned && laser.y + laser.height < 0) {
+      bossLasers.splice(i, 1);
+    }
+  }
+}
+
+function drawBoss() {
+  if (bossTexture.complete && bossTexture.naturalWidth > 0) {
+    ctx.drawImage(bossTexture, boss.x, boss.y, boss.width, boss.height);
+  } else {
+    ctx.fillStyle = "#7ee34b";
+    ctx.fillRect(boss.x + 22, boss.y + 20, 52, 48);
+    ctx.fillRect(boss.x + 6, boss.y + 32, 16, 30);
+    ctx.fillRect(boss.x + 74, boss.y + 32, 16, 30);
+    ctx.fillRect(boss.x + 30, boss.y + 8, 12, 12);
+    ctx.fillRect(boss.x + 54, boss.y + 8, 12, 12);
+    ctx.fillRect(boss.x + 24, boss.y + 68, 14, 14);
+    ctx.fillRect(boss.x + 58, boss.y + 68, 14, 14);
+
+    ctx.fillStyle = "#111";
+    ctx.fillRect(boss.x + 32, boss.y + 38, 8, 8);
+    ctx.fillRect(boss.x + 56, boss.y + 38, 8, 8);
+  }
+
+  ctx.fillStyle = "#444";
+  ctx.fillRect(WIDTH / 2 - 60, boss.y + boss.height + 13, 120, 8);
+  ctx.fillStyle = "#ff5263";
+  ctx.fillRect(WIDTH / 2 - 60, boss.y + boss.height + 13, 120 * boss.health / boss.maxHealth, 8);
+  ctx.fillStyle = "white";
+  ctx.font = "14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("BOSS", WIDTH / 2, boss.y + boss.height + 38);
+  ctx.textAlign = "start";
+}
+
 
 // ------------------------------------------------------------
 // DRAW: paints everything on the canvas. Black background,
@@ -233,7 +339,7 @@ function draw() {
   ctx.fillStyle = "white";
   ctx.font = "20px sans-serif";
   ctx.fillText("Score: " + score, 20, 30);
-  ctx.fillText("Respawns: " + respawnsLeft, WIDTH - 150, 30);
+  ctx.fillText((boss ? "Lives: " : "Respawns: ") + respawnsLeft, WIDTH - 150, 30);
   ctx.fillText("Level: " + currentLevel + "/" + TOTAL_LEVELS, WIDTH / 2 - 50, 30);
 
   if (gameWon) {
@@ -247,7 +353,7 @@ function draw() {
     return;
   }
 
-  if (bricks.length === 0) {
+  if (bricks.length === 0 && !boss) {
     ctx.textAlign = "center";
     ctx.font = "36px sans-serif";
     ctx.fillText("Level " + currentLevel + " complete!", WIDTH / 2, HEIGHT / 2);
@@ -267,11 +373,21 @@ function draw() {
     return;
   }
 
+  if (boss) {
+    drawBoss();
+    for (const laser of bossLasers) {
+      ctx.fillStyle = laser.returned ? "#5fffe0" : "#ff5263";
+      ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+    }
+  }
+
   ctx.fillStyle = "white";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-  for (const activeBall of [ball, ...extraBalls]) {
-    ctx.fillStyle = activeBall.grenadeArmed ? "#f05a3e" : "white";
-    ctx.fillRect(activeBall.x, activeBall.y, activeBall.width, activeBall.height);
+  if (!boss) {
+    for (const activeBall of [ball, ...extraBalls]) {
+      ctx.fillStyle = activeBall.grenadeArmed ? "#f05a3e" : "white";
+      ctx.fillRect(activeBall.x, activeBall.y, activeBall.width, activeBall.height);
+    }
   }
 
   drawBricks();  // bricks.js
@@ -301,7 +417,21 @@ function restartGame() {
 }
 
 function startLevel() {
-  bricks = makeBricks(currentLevel);
+  boss = currentLevel === TOTAL_LEVELS ? {
+    x: WIDTH / 2 - 48,
+    y: 62,
+    width: 96,
+    height: 96,
+    vx: 2.6,
+    health: 8,
+    maxHealth: 8,
+    fireCooldown: 55
+  } : null;
+  bossLasers.length = 0;
+  if (boss) {
+    respawnsLeft = 20;
+  }
+  bricks = boss ? [] : makeBricks(currentLevel);
   levelTransitionTicks = 0;
   grenadeDrops.length = 0;
   paddle.width = Math.max(60, 90 - (currentLevel - 1) * 3);
