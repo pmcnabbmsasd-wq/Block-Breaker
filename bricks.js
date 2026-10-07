@@ -35,6 +35,12 @@ function makeBricks(level = 1) {
 
   list[10].powerUp = "multiball";
   list[21].powerUp = "tnt";
+  if (level % 2 === 0) {
+    list[5].powerUp = "extraLife";
+  }
+  if (level === 3) {
+    list[26].powerUp = "grenade";
+  }
 
   return list;
 }
@@ -49,7 +55,8 @@ function drawBricks() {
       ctx.font = "bold 11px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(brick.powerUp === "multiball" ? "+2" : "TNT", brick.x + brick.width / 2, brick.y + brick.height / 2);
+      const label = brick.powerUp === "multiball" ? "+2" : brick.powerUp === "grenade" ? "GRENADE" : brick.powerUp === "extraLife" ? "1UP" : "TNT";
+      ctx.fillText(label, brick.x + brick.width / 2, brick.y + brick.height / 2);
     }
   }
   ctx.textAlign = "start";

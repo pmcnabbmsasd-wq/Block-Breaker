@@ -8,6 +8,8 @@
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+const grenadeTexture = new Image();
+grenadeTexture.src = "grenade.png";
 
 const WIDTH = canvas.width;   // 600
 const HEIGHT = canvas.height; // 450
@@ -27,7 +29,8 @@ const ball = {
   width: 12,
   height: 12,
   vx: 0,
-  vy: 0
+  vy: 0,
+  grenadeArmed: false
 };
 
 // Put the ball in the center and reset its speed and direction.
@@ -37,6 +40,7 @@ function resetBall() {
   ball.y = HEIGHT / 2 - ball.height / 2;
   ball.vx = ballSpeed;  // right
   ball.vy = ballSpeed;  // down
+  ball.grenadeArmed = false;
 }
 
 
@@ -59,6 +63,7 @@ let bricks = [];
 let score = 0;
 const particles = [];
 const extraBalls = [];
+const grenadeDrops = [];
 const STARTING_RESPAWNS = 15;
 const TOTAL_LEVELS = 11;
 let respawnsLeft = STARTING_RESPAWNS;
@@ -123,6 +128,8 @@ function update() {
     bounceOffBricks(activeBall);  // collisions.js
   }
 
+  updateGrenadeDrops();
+
   for (let i = extraBalls.length - 1; i >= 0; i--) {
     if (extraBalls[i].y > HEIGHT) {
       extraBalls.splice(i, 1);
@@ -177,6 +184,20 @@ function spawnExtraBalls(sourceBall) {
       vx: Math.cos(angle + angleOffset) * speed,
       vy: Math.sin(angle + angleOffset) * speed
     });
+  }
+}
+
+function updateGrenadeDrops() {
+  for (let i = grenadeDrops.length - 1; i >= 0; i--) {
+    const drop = grenadeDrops[i];
+    drop.y += drop.vy;
+
+    if (boxesTouch(drop, paddle)) {
+      ball.grenadeArmed = true;
+      grenadeDrops.splice(i, 1);
+    } else if (drop.y > HEIGHT) {
+      grenadeDrops.splice(i, 1);
+    }
   }
 }
 
@@ -249,10 +270,21 @@ function draw() {
   ctx.fillStyle = "white";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
   for (const activeBall of [ball, ...extraBalls]) {
+    ctx.fillStyle = activeBall.grenadeArmed ? "#f05a3e" : "white";
     ctx.fillRect(activeBall.x, activeBall.y, activeBall.width, activeBall.height);
   }
 
   drawBricks();  // bricks.js
+  for (const drop of grenadeDrops) {
+    if (grenadeTexture.complete && grenadeTexture.naturalWidth > 0) {
+      ctx.drawImage(grenadeTexture, drop.x, drop.y, drop.width, drop.height);
+    } else {
+      ctx.fillStyle = "#f05a3e";
+      ctx.beginPath();
+      ctx.arc(drop.x + drop.width / 2, drop.y + drop.height / 2, drop.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
   drawParticles();
 }
 
@@ -271,6 +303,7 @@ function restartGame() {
 function startLevel() {
   bricks = makeBricks(currentLevel);
   levelTransitionTicks = 0;
+  grenadeDrops.length = 0;
   paddle.width = Math.max(60, 90 - (currentLevel - 1) * 3);
   paddle.x = WIDTH / 2 - paddle.width / 2;
   extraBalls.length = 0;

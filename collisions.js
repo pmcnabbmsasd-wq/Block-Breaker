@@ -67,25 +67,35 @@ function removeBrick(brick) {
   return true;
 }
 
-function explodeTnt(tntBrick) {
+function explodeNearbyBricks(centerBrick) {
+  const distanceFromCenter = (brick) =>
+    Math.abs(brick.row - centerBrick.row) + Math.abs(brick.col - centerBrick.col);
+  const directionOrder = (brick) => {
+    if (brick.row === centerBrick.row && brick.col < centerBrick.col) return 0;
+    if (brick.row === centerBrick.row && brick.col > centerBrick.col) return 1;
+    if (brick.row < centerBrick.row) return 2;
+    return 3;
+  };
   const neighbors = bricks
-    .filter((brick) =>
-      (brick.row === tntBrick.row && Math.abs(brick.col - tntBrick.col) === 1) ||
-      (brick.col === tntBrick.col && Math.abs(brick.row - tntBrick.row) === 1)
-    )
+    .filter((brick) => brick !== centerBrick)
     .sort((a, b) => {
-      const directionOrder = (brick) => {
-        if (brick.row === tntBrick.row && brick.col < tntBrick.col) return 0;
-        if (brick.row === tntBrick.row && brick.col > tntBrick.col) return 1;
-        if (brick.row < tntBrick.row) return 2;
-        return 3;
-      };
-      return directionOrder(a) - directionOrder(b);
+      const distanceDifference = distanceFromCenter(a) - distanceFromCenter(b);
+      return distanceDifference || directionOrder(a) - directionOrder(b);
     });
 
   for (const neighbor of neighbors.slice(0, 2)) {
     removeBrick(neighbor);
   }
+}
+
+function dropGrenade(brick) {
+  grenadeDrops.push({
+    x: brick.x + brick.width / 2 - 9,
+    y: brick.y + brick.height / 2 - 12,
+    width: 18,
+    height: 24,
+    vy: 2.5
+  });
 }
 
 
@@ -119,10 +129,20 @@ function bounceOffBricks(targetBall = ball) {
     }
 
     if (removeBrick(brick)) {
-      if (brick.powerUp === "multiball") {
+      const grenadeDetonated = targetBall.grenadeArmed;
+      if (grenadeDetonated) {
+        targetBall.grenadeArmed = false;
+        explodeNearbyBricks(brick);
+      }
+
+      if (brick.powerUp === "extraLife") {
+        respawnsLeft++;
+      } else if (!grenadeDetonated && brick.powerUp === "multiball") {
         spawnExtraBalls(targetBall);
-      } else if (brick.powerUp === "tnt") {
-        explodeTnt(brick);
+      } else if (!grenadeDetonated && brick.powerUp === "tnt") {
+        explodeNearbyBricks(brick);
+      } else if (!grenadeDetonated && brick.powerUp === "grenade") {
+        dropGrenade(brick);
       }
     }
 
