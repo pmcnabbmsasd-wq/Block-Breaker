@@ -74,8 +74,9 @@ function resetBall() {
 
 function startBallFromSky() {
   ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
-  ball.y = 0;
-  ball.vx = 0;
+  const brickBottom = bricks.reduce((lowest, brick) => Math.max(lowest, brick.y + brick.height), 0);
+  ball.y = brickBottom + 8;
+  ball.vx = -0.35;
   ball.vy = BALL_SPEED;
   ball.grenadeArmed = false;
 }
