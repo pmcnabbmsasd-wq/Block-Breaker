@@ -42,6 +42,7 @@ function bounceOffPaddle(targetBall = ball) {
   if (boxesTouch(targetBall, paddle) && targetBall.vy > 0) {
     targetBall.y = paddle.y - targetBall.height;  // sit on top of the paddle
     targetBall.vy = -targetBall.vy;
+    gameState.paddleHits++;
   }
 }
 
@@ -53,6 +54,7 @@ function removeBrick(brick) {
 
   bricks.splice(brickIndex, 1);
   score += 10;
+  gameState.combo++;
 
   for (let i = 0; i < 12; i++) {
     particles.push({

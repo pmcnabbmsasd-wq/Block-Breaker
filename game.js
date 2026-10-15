@@ -16,6 +16,33 @@ bossTexture.src = "boss.png";
 const WIDTH = canvas.width;   // 600
 const HEIGHT = canvas.height; // 450
 
+class GameState {
+  constructor() {
+    if (GameState.instance) {
+      return GameState.instance;
+    }
+
+    this.combo = 0;
+    this.paddleHits = 0;
+    GameState.instance = this;
+  }
+
+  static getInstance() {
+    return GameState.instance || new GameState();
+  }
+
+  resetCombo() {
+    this.combo = 0;
+  }
+
+  reset() {
+    this.combo = 0;
+    this.paddleHits = 0;
+  }
+}
+
+const gameState = GameState.getInstance();
+
 
 // ------------------------------------------------------------
 // THE BALL
@@ -38,10 +65,10 @@ const ball = {
 // Put the ball in the center and reset its speed and direction.
 function resetBall() {
   const ballSpeed = BALL_SPEED + (currentLevel - 1) * 0.35;
-  ball.x = WIDTH / 2 - ball.width / 2;
-  ball.y = HEIGHT / 2 - ball.height / 2;
+  ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
+  ball.y = paddle.y - ball.height;
   ball.vx = ballSpeed;  // right
-  ball.vy = ballSpeed;  // down
+  ball.vy = -ballSpeed; // up
   ball.grenadeArmed = false;
 }
 
@@ -148,8 +175,10 @@ function update() {
   if (!boss && ball.y > HEIGHT) {
     if (respawnsLeft > 0) {
       respawnsLeft--;
+      gameState.resetCombo();
       resetBall();
     } else {
+      gameState.resetCombo();
       gameOver = true;
       extraBalls.length = 0;
     }
@@ -252,6 +281,7 @@ function updateBossLasers() {
       laser.vx = Math.max(-2, Math.min(2, paddleOffset * 0.08));
     } else if (!laser.returned && laser.y > HEIGHT) {
       respawnsLeft = Math.max(0, respawnsLeft - 1);
+      gameState.resetCombo();
       bossLasers.splice(i, 1);
       if (respawnsLeft === 0) {
         gameOver = true;
@@ -341,6 +371,9 @@ function draw() {
   ctx.fillText("Score: " + score, 20, 30);
   ctx.fillText((boss ? "Lives: " : "Respawns: ") + respawnsLeft, WIDTH - 150, 30);
   ctx.fillText("Level: " + currentLevel + "/" + TOTAL_LEVELS, WIDTH / 2 - 50, 30);
+  ctx.font = "14px sans-serif";
+  ctx.fillText("Combo: " + gameState.combo, 20, 52);
+  ctx.fillText("Paddle hits: " + gameState.paddleHits, 125, 52);
 
   if (gameWon) {
     ctx.textAlign = "center";
@@ -408,6 +441,7 @@ function restartGame() {
   currentLevel = 1;
   levelTransitionTicks = 0;
   score = 0;
+  gameState.reset();
   respawnsLeft = STARTING_RESPAWNS;
   gameOver = false;
   gameWon = false;
