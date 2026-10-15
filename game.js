@@ -51,6 +51,7 @@ const gameState = GameState.getInstance();
 // A positive vy means the ball is moving DOWN the screen.
 // ------------------------------------------------------------
 const BALL_SPEED = 4;
+const BALL_SPAWN_VX = 0.35;
 
 const ball = {
   x: 0,
@@ -67,7 +68,7 @@ function resetBall() {
   const ballSpeed = BALL_SPEED + (currentLevel - 1) * 0.35;
   ball.x = WIDTH / 2 - ball.width / 2;
   ball.y = HEIGHT / 2 - ball.height / 2;
-  ball.vx = ballSpeed;  // right
+  ball.vx = BALL_SPAWN_VX;  // slight rightward drift
   ball.vy = ballSpeed;  // down
   ball.grenadeArmed = false;
 }
@@ -76,7 +77,7 @@ function startBallFromSky() {
   ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
   const brickBottom = bricks.reduce((lowest, brick) => Math.max(lowest, brick.y + brick.height), 0);
   ball.y = brickBottom + 8;
-  ball.vx = -0.35;
+  ball.vx = BALL_SPAWN_VX;
   ball.vy = BALL_SPEED;
   ball.grenadeArmed = false;
 }
