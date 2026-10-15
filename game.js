@@ -65,10 +65,18 @@ const ball = {
 // Put the ball in the center and reset its speed and direction.
 function resetBall() {
   const ballSpeed = BALL_SPEED + (currentLevel - 1) * 0.35;
-  ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
-  ball.y = paddle.y - ball.height;
+  ball.x = WIDTH / 2 - ball.width / 2;
+  ball.y = HEIGHT / 2 - ball.height / 2;
   ball.vx = ballSpeed;  // right
-  ball.vy = -ballSpeed; // up
+  ball.vy = ballSpeed;  // down
+  ball.grenadeArmed = false;
+}
+
+function startBallFromSky() {
+  ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
+  ball.y = 0;
+  ball.vx = 0;
+  ball.vy = BALL_SPEED;
   ball.grenadeArmed = false;
 }
 
@@ -511,6 +519,7 @@ function frame(now) {
 
 function start() {
   restartGame();
+  startBallFromSky();
   lastTime = performance.now();
   requestAnimationFrame(frame);
 }
