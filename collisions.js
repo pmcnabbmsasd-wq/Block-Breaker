@@ -53,7 +53,8 @@ function removeBrick(brick) {
   }
 
   bricks.splice(brickIndex, 1);
-  score += 10;
+  money += 10;
+  updateWalletDisplay();
   gameState.combo++;
 
   for (let i = 0; i < 12; i++) {

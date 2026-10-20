@@ -1,1 +1,8 @@
 # Super-Basic-Brick-Bounce-Game
+
+Use the main menu to play Block Breaker or visit the roulette casino. Breaking
+blocks earns $10 each, which can be wagered on red, black, or green. The game
+has 38 roulette pockets: one green (0), 18 red, and 19 black. Red/black wins
+pay 1:1 and green wins pay 35:1. Roulette wagers are custom whole-dollar
+amounts with a $50 minimum. The settings provide separate overall and music
+volume controls.

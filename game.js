@@ -113,7 +113,8 @@ const paddle = {
 // THE BRICKS (the list is filled in by makeBricks() in bricks.js)
 // ------------------------------------------------------------
 let bricks = [];
-let score = 0;
+let money = 0;
+let activeScreen = "menu";
 const particles = [];
 const extraBalls = [];
 const grenadeDrops = [];
@@ -156,6 +157,10 @@ document.addEventListener("keyup", function (event) {
 // what they touched.
 // ------------------------------------------------------------
 function update() {
+  if (activeScreen !== "game") {
+    return;
+  }
+
   if (gameOver || gameWon) {
     updateParticles();
     return;
@@ -396,7 +401,7 @@ function draw() {
 
   ctx.fillStyle = "white";
   ctx.font = "20px sans-serif";
-  ctx.fillText("Score: " + score, 20, 30);
+  ctx.fillText("Cash: $" + money, 20, 30);
   ctx.fillText((boss ? "Lives: " : "Respawns: ") + respawnsLeft, WIDTH - 150, 30);
   ctx.fillText("Level: " + currentLevel + "/" + TOTAL_LEVELS, WIDTH / 2 - 50, 30);
   ctx.font = "14px sans-serif";
@@ -468,7 +473,6 @@ function draw() {
 function restartGame() {
   currentLevel = 1;
   levelTransitionTicks = 0;
-  score = 0;
   gameState.reset();
   respawnsLeft = STARTING_RESPAWNS;
   gameOver = false;
@@ -533,13 +537,13 @@ function frame(now) {
     leftover = leftover - STEP;
   }
 
-  draw();
+  if (activeScreen === "game") {
+    draw();
+  }
   requestAnimationFrame(frame);
 }
 
 function start() {
-  restartGame();
-  startBallFromSky();
   lastTime = performance.now();
   requestAnimationFrame(frame);
 }

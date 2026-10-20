@@ -8,11 +8,47 @@
 </head>
 <body>
   <main>
-    <canvas id="game" width="600" height="450" aria-label="Block Breaker game"></canvas>
-    <p>Move the paddle with the left and right arrow keys, or A and D. On level 16, bounce incoming lasers back at the boss.</p>
-    <button id="music-toggle" type="button" aria-pressed="false">Play music</button>
-    <p id="music-status" aria-live="polite">The beat includes playful spoken lyrics.</p>
-    <p id="lyric-caption" lang="zh-Hans" aria-live="polite"></p>
+    <section id="main-menu" aria-labelledby="menu-title">
+      <h1 id="menu-title">Block Breaker</h1>
+      <p id="menu-wallet" aria-live="polite">Cash: $0</p>
+      <div class="menu-actions">
+        <button id="play-game" type="button">Play Block Breaker</button>
+        <button id="open-casino" type="button">Casino</button>
+      </div>
+      <section class="settings" aria-labelledby="settings-title">
+        <h2 id="settings-title">Settings</h2>
+        <label for="master-volume">Volume <output id="master-volume-value">70%</output></label>
+        <input id="master-volume" type="range" min="0" max="100" value="70">
+        <label for="music-volume">Music volume <output id="music-volume-value">60%</output></label>
+        <input id="music-volume" type="range" min="0" max="100" value="60">
+        <button id="music-toggle" type="button" aria-pressed="false">Play music</button>
+        <p id="music-status" aria-live="polite">The beat includes playful spoken lyrics.</p>
+        <p id="lyric-caption" lang="zh-Hans" aria-live="polite"></p>
+      </section>
+    </section>
+
+    <section id="game-screen" hidden aria-label="Block Breaker game">
+      <canvas id="game" width="600" height="450" aria-label="Block Breaker game"></canvas>
+      <p>Move the paddle with the left and right arrow keys, or A and D. On level 16, bounce incoming lasers back at the boss.</p>
+      <button id="game-menu" type="button">Main menu</button>
+    </section>
+
+    <section id="casino-screen" hidden aria-labelledby="casino-title">
+      <h1 id="casino-title">Casino</h1>
+      <p id="casino-wallet" aria-live="polite">Cash: $0</p>
+      <p>Bet on red, black, or green. Red and black pay 1:1; green pays 35:1.</p>
+      <label for="wager">Custom wager ($50 minimum)</label>
+      <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
+      <label for="roulette-bet">Bet on</label>
+      <select id="roulette-bet">
+        <option value="red">Red</option>
+        <option value="black">Black</option>
+        <option value="green">Green (0)</option>
+      </select>
+      <button id="spin-roulette" type="button">Spin roulette</button>
+      <p id="casino-result" aria-live="polite"></p>
+      <button id="casino-menu" type="button">Main menu</button>
+    </section>
   </main>
 
   <!-- The order matters: game.js goes first because the other files use its settings. -->
@@ -20,5 +56,6 @@
   <script src="bricks.js"></script>
   <script src="collisions.js"></script>
   <script src="soundtrack.js"></script>
+  <script src="menu.js"></script>
 </body>
 </html>

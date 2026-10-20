@@ -35,6 +35,60 @@ p {
   line-height: 1.5;
 }
 
+section[hidden] {
+  display: none;
+}
+
+h1 {
+  margin: 8px 0;
+  font-size: 32px;
+}
+
+h2 {
+  margin: 8px 0 16px;
+  font-size: 20px;
+}
+
+.menu-actions,
+.settings {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+  margin: 20px auto;
+}
+
+.settings {
+  border: 1px solid #fff;
+  padding: 16px;
+  text-align: left;
+}
+
+.settings h2,
+.settings p {
+  text-align: center;
+}
+
+label {
+  margin-top: 8px;
+  text-align: left;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #fff;
+  border-radius: 0;
+  background: #000;
+  color: #fff;
+  font: inherit;
+}
+
+input[type="range"] {
+  padding: 0;
+  accent-color: #fff;
+}
+
 button {
   margin-top: 12px;
   padding: 8px 12px;
@@ -54,4 +108,9 @@ button:focus-visible {
   min-height: 1.5em;
   font-size: 18px;
   font-weight: bold;
+}
+
+#casino-screen {
+  max-width: 400px;
+  margin: 0 auto;
 }

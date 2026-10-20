@@ -2,6 +2,10 @@
 const musicButton = document.getElementById("music-toggle");
 const musicStatus = document.getElementById("music-status");
 const lyricCaption = document.getElementById("lyric-caption");
+const masterVolume = document.getElementById("master-volume");
+const musicVolume = document.getElementById("music-volume");
+const masterVolumeValue = document.getElementById("master-volume-value");
+const musicVolumeValue = document.getElementById("music-volume-value");
 const stepLength = 0.125;
 const kickSteps = [0, 6, 8, 11];
 const snareSteps = [4, 12];
@@ -20,6 +24,8 @@ const lyricCaptions = [
 ];
 
 let audioContext;
+let masterGain;
+let musicGain;
 let musicTimer;
 let musicStep = 0;
 let musicPlaying = false;
@@ -28,12 +34,32 @@ let lyricLine = 0;
 let noiseBuffer;
 let distortionCurve;
 
+function updateVolumeSettings() {
+  const masterLevel = Number(masterVolume.value) / 100;
+  const musicLevel = Number(musicVolume.value) / 100;
+  masterVolumeValue.value = masterVolume.value + "%";
+  musicVolumeValue.value = musicVolume.value + "%";
+  masterVolumeValue.textContent = masterVolumeValue.value;
+  musicVolumeValue.textContent = musicVolumeValue.value;
+
+  if (masterGain && audioContext) {
+    masterGain.gain.setTargetAtTime(masterLevel, audioContext.currentTime, 0.015);
+  }
+  if (musicGain && audioContext) {
+    musicGain.gain.setTargetAtTime(musicLevel, audioContext.currentTime, 0.015);
+  }
+}
+
+masterVolume.addEventListener("input", updateVolumeSettings);
+musicVolume.addEventListener("input", updateVolumeSettings);
+updateVolumeSettings();
+
 function speakLyricLine() {
   const lineIndex = lyricLine;
   const utterance = new SpeechSynthesisUtterance(lyricLines[lineIndex]);
   utterance.rate = 1.18;
   utterance.pitch = 1.08;
-  utterance.volume = 0.85;
+  utterance.volume = 0.85 * Number(masterVolume.value) / 100 * Number(musicVolume.value) / 100;
   utterance.onstart = function () {
     lyricCaption.textContent = lyricCaptions[lineIndex];
   };
@@ -78,7 +104,7 @@ function playNoise(time, duration, volume, frequency, resonance) {
 
   source.connect(filter);
   filter.connect(envelope);
-  envelope.connect(audioContext.destination);
+  envelope.connect(musicGain);
   source.start(time);
   source.stop(time + duration);
 }
@@ -97,7 +123,7 @@ function playKick(time) {
 
   oscillator.connect(shaper);
   shaper.connect(envelope);
-  envelope.connect(audioContext.destination);
+  envelope.connect(musicGain);
   oscillator.start(time);
   oscillator.stop(time + 0.23);
 }
@@ -116,7 +142,7 @@ function playBass(midiNote, time) {
 
   oscillator.connect(shaper);
   shaper.connect(envelope);
-  envelope.connect(audioContext.destination);
+  envelope.connect(musicGain);
   oscillator.start(time);
   oscillator.stop(time + 0.2);
 }
@@ -165,6 +191,11 @@ musicButton.addEventListener("click", async function () {
         throw new Error("Web Audio API is not supported by this browser.");
       }
       audioContext = new AudioContextClass();
+      masterGain = audioContext.createGain();
+      musicGain = audioContext.createGain();
+      musicGain.connect(masterGain);
+      masterGain.connect(audioContext.destination);
+      updateVolumeSettings();
       noiseBuffer = makeNoiseBuffer();
       distortionCurve = makeDistortionCurve();
     }
