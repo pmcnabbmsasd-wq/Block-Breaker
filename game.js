@@ -66,11 +66,19 @@ const ball = {
 
 // Put the ball in the center and reset its speed and direction.
 function resetBall() {
-  const ballSpeed = BALL_SPEED + (currentLevel - 1) * 0.35;
   ball.x = WIDTH / 2 - ball.width / 2;
   ball.y = HEIGHT / 2 - ball.height / 2;
-  setSpawnVelocity(ballSpeed);
+  ball.vx = 0;
+  ball.vy = 0;
   ball.grenadeArmed = false;
+}
+
+function launchBall() {
+  if (gameOver || gameWon || ball.vx !== 0 || ball.vy !== 0) {
+    return;
+  }
+
+  setSpawnVelocity(BALL_SPEED + (currentLevel - 1) * 0.35);
 }
 
 function setSpawnVelocity(verticalSpeed) {
@@ -83,7 +91,8 @@ function startBallFromSky() {
   ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
   const brickBottom = bricks.reduce((lowest, brick) => Math.max(lowest, brick.y + brick.height), 0);
   ball.y = brickBottom + 8;
-  setSpawnVelocity(BALL_SPEED);
+  ball.vx = 0;
+  ball.vy = 0;
   ball.grenadeArmed = false;
 }
 
@@ -127,6 +136,10 @@ const keys = {};
 
 document.addEventListener("keydown", function (event) {
   keys[event.key.toLowerCase()] = true;
+  if (event.code === "Space") {
+    event.preventDefault();
+    launchBall();
+  }
   // Stop the arrow keys from scrolling the page.
   if (event.key.startsWith("Arrow")) {
     event.preventDefault();
