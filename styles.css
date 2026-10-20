@@ -114,3 +114,33 @@ button:focus-visible {
   max-width: 400px;
   margin: 0 auto;
 }
+
+.roulette-stage {
+  position: relative;
+  width: min(100%, 440px);
+  margin: 18px auto;
+  padding-top: 10px;
+}
+
+#roulette-wheel {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 0;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px #d7bd75);
+}
+
+.roulette-pointer {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-right: 12px solid transparent;
+  border-left: 12px solid transparent;
+  border-top: 26px solid #fff;
+  filter: drop-shadow(0 1px 2px #000);
+}

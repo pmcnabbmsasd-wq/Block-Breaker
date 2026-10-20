@@ -37,6 +37,10 @@
       <h1 id="casino-title">Casino</h1>
       <p id="casino-wallet" aria-live="polite">Cash: $0</p>
       <p>Bet on red, black, or green. Red and black pay 1:1; green pays 35:1.</p>
+      <div class="roulette-stage">
+        <div class="roulette-pointer" aria-hidden="true"></div>
+        <canvas id="roulette-wheel" width="440" height="440" role="img" aria-label="Roulette wheel with 38 pockets"></canvas>
+      </div>
       <label for="wager">Custom wager ($50 minimum)</label>
       <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
       <label for="roulette-bet">Bet on</label>
