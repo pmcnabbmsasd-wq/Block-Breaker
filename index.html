@@ -40,6 +40,7 @@
         <button id="show-roulette" type="button" aria-pressed="false">Roulette</button>
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
+        <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
       </div>
       <label for="wager">Custom wager ($50 minimum)</label>
       <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
@@ -86,6 +87,22 @@
         </div>
         <button id="spin-slots" type="button">Spin slots</button>
         <p id="slots-result" aria-live="polite">Place your bet and spin to play.</p>
+      </div>
+      <div id="coin-flip-game" hidden>
+        <p>Pick heads or tails. A correct guess pays 1:1.</p>
+        <label for="coin-guess">Your pick</label>
+        <select id="coin-guess">
+          <option value="heads">Heads</option>
+          <option value="tails">Tails</option>
+        </select>
+        <div class="coin-stage" role="img" aria-label="Coin showing heads">
+          <div id="coin" class="coin">
+            <div class="coin-face coin-heads" aria-hidden="true">HEADS</div>
+            <div class="coin-face coin-tails" aria-hidden="true">TAILS</div>
+          </div>
+        </div>
+        <button id="flip-coin" type="button">Flip coin</button>
+        <p id="coin-result" aria-live="polite">Place your bet and flip to play.</p>
       </div>
       <button id="casino-menu" type="button">Main menu</button>
     </section>

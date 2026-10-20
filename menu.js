@@ -10,6 +10,7 @@ const spinButton = document.getElementById("spin-roulette");
 const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
 const slotsGame = document.getElementById("slots-game");
+const coinFlipGame = document.getElementById("coin-flip-game");
 const wagerMinimum = 50;
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
@@ -20,6 +21,7 @@ let playerHand = [];
 let dealerHand = [];
 let blackjackWager = 0;
 let blackjackRoundActive = false;
+let coinRotation = 0;
 
 const rouletteColors = [
   "green",
@@ -114,7 +116,8 @@ function showCasinoGame(game) {
   rouletteGame.hidden = game !== "roulette";
   blackjackGame.hidden = game !== "blackjack";
   slotsGame.hidden = game !== "slots";
-  for (const name of ["roulette", "blackjack", "slots"]) {
+  coinFlipGame.hidden = game !== "coin-flip";
+  for (const name of ["roulette", "blackjack", "slots", "coin-flip"]) {
     document.getElementById("show-" + name).setAttribute("aria-pressed", String(name === game));
   }
 }
@@ -305,6 +308,10 @@ document.getElementById("show-slots").addEventListener("click", function () {
   showCasinoGame("slots");
 });
 
+document.getElementById("show-coin-flip").addEventListener("click", function () {
+  showCasinoGame("coin-flip");
+});
+
 document.getElementById("deal-blackjack").addEventListener("click", function () {
   const validation = validateWager();
   const result = document.getElementById("blackjack-result");
@@ -407,6 +414,56 @@ slotsButton.addEventListener("click", async function () {
     }
   } finally {
     slotsButton.disabled = false;
+    updateWalletDisplay();
+  }
+});
+
+const coin = document.getElementById("coin");
+const coinButton = document.getElementById("flip-coin");
+
+coinButton.addEventListener("click", async function () {
+  const validation = validateWager();
+  const result = document.getElementById("coin-result");
+  if (validation.error) {
+    result.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const outcome = Math.random() < 0.5 ? "heads" : "tails";
+  const guess = document.getElementById("coin-guess").value;
+  const targetAngle = outcome === "heads" ? 0 : 180;
+  const normalizedRotation = ((coinRotation % 360) + 360) % 360;
+  const alignment = (targetAngle - normalizedRotation + 360) % 360;
+  const nextRotation = coinRotation + 360 * 6 + alignment;
+
+  money -= wager;
+  updateWalletDisplay();
+  result.textContent = "The coin is flipping...";
+  coinButton.disabled = true;
+
+  try {
+    const animation = coin.animate(
+      [
+        { transform: "rotateY(" + coinRotation + "deg)" },
+        { transform: "rotateY(" + nextRotation + "deg)" }
+      ],
+      { duration: 2800, easing: "cubic-bezier(0.12, 0.72, 0.12, 1)", fill: "forwards" }
+    );
+    await animation.finished;
+    coinRotation = nextRotation;
+    coin.style.transform = "rotateY(" + coinRotation + "deg)";
+    animation.cancel();
+    document.querySelector(".coin-stage").setAttribute("aria-label", "Coin showing " + outcome);
+
+    if (outcome === guess) {
+      money += wager * 2;
+      result.textContent = "It’s " + outcome + "! You won $" + wager + ".";
+    } else {
+      result.textContent = "It’s " + outcome + ". You lost $" + wager + ".";
+    }
+  } finally {
+    coinButton.disabled = false;
     updateWalletDisplay();
   }
 });
