@@ -115,6 +115,90 @@ button:focus-visible {
   margin: 0 auto;
 }
 
+.casino-games {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.slot-machine {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 24px 0;
+  padding: 16px;
+  border: 3px solid #d7bd75;
+  border-radius: 12px;
+  background: #171717;
+  box-shadow: inset 0 0 16px #000;
+}
+
+.slot-reel {
+  display: grid;
+  width: 88px;
+  height: 100px;
+  place-items: center;
+  border: 2px solid #d7bd75;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  font-size: 46px;
+  line-height: 1;
+}
+
+.blackjack-table {
+  margin: 18px 0;
+  padding: 14px;
+  border: 2px solid #d7bd75;
+  border-radius: 18px;
+  background: #174b32;
+}
+
+.hand-area + .hand-area {
+  margin-top: 20px;
+}
+
+.hand-area h2,
+.hand-area p {
+  margin: 8px 0;
+}
+
+.card-hand {
+  display: flex;
+  min-height: 96px;
+  justify-content: center;
+  gap: 8px;
+}
+
+.playing-card {
+  display: flex;
+  width: 62px;
+  height: 90px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 2px solid #222;
+  border-radius: 7px;
+  background: #fff;
+  color: #111;
+  font: bold 21px Georgia, serif;
+  box-shadow: 2px 3px 5px #0008;
+}
+
+.red-card {
+  color: #c52232;
+}
+
+.card-back {
+  border: 3px solid #f1d88a;
+  outline: 1px solid #222;
+  outline-offset: -7px;
+  background: repeating-linear-gradient(45deg, #173d7a 0 5px, #2458a3 5px 10px);
+  color: #f1d88a;
+}
+
 .roulette-stage {
   position: relative;
   width: min(100%, 440px);

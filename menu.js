@@ -7,10 +7,19 @@ const wagerInput = document.getElementById("wager");
 const rouletteBet = document.getElementById("roulette-bet");
 const casinoResult = document.getElementById("casino-result");
 const spinButton = document.getElementById("spin-roulette");
+const rouletteGame = document.getElementById("roulette-game");
+const blackjackGame = document.getElementById("blackjack-game");
+const slotsGame = document.getElementById("slots-game");
+const wagerMinimum = 50;
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
 const rouletteSlice = (Math.PI * 2) / 38;
 let wheelRotation = 0;
+let blackjackDeck = [];
+let playerHand = [];
+let dealerHand = [];
+let blackjackWager = 0;
+let blackjackRoundActive = false;
 
 const rouletteColors = [
   "green",
@@ -90,6 +99,26 @@ function updateWalletDisplay() {
   casinoWallet.textContent = balance;
 }
 
+function validateWager() {
+  const wager = Number(wagerInput.value);
+  if (!Number.isSafeInteger(wager) || wager < wagerMinimum) {
+    return { error: "Enter a whole-dollar wager of at least $" + wagerMinimum + "." };
+  }
+  if (wager > money) {
+    return { error: "Your wager cannot be greater than your cash." };
+  }
+  return { wager };
+}
+
+function showCasinoGame(game) {
+  rouletteGame.hidden = game !== "roulette";
+  blackjackGame.hidden = game !== "blackjack";
+  slotsGame.hidden = game !== "slots";
+  for (const name of ["roulette", "blackjack", "slots"]) {
+    document.getElementById("show-" + name).setAttribute("aria-pressed", String(name === game));
+  }
+}
+
 function showScreen(screenName) {
   activeScreen = screenName;
   mainMenu.hidden = screenName !== "menu";
@@ -118,15 +147,12 @@ document.getElementById("casino-menu").addEventListener("click", function () {
 });
 
 spinButton.addEventListener("click", async function () {
-  const wager = Number(wagerInput.value);
-  if (!Number.isSafeInteger(wager) || wager < 50) {
-    casinoResult.textContent = "Enter a whole-dollar wager of at least $50.";
+  const validation = validateWager();
+  if (validation.error) {
+    casinoResult.textContent = validation.error;
     return;
   }
-  if (wager > money) {
-    casinoResult.textContent = "Your wager cannot be greater than your cash.";
-    return;
-  }
+  const wager = validation.wager;
 
   const pocket = Math.floor(Math.random() * rouletteColors.length);
   const color = rouletteColors[pocket];
@@ -152,5 +178,239 @@ spinButton.addEventListener("click", async function () {
   }
 });
 
+const cardSuits = ["♠", "♥", "♦", "♣"];
+const cardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
+function createShuffledDeck() {
+  const deck = [];
+  for (let copy = 0; copy < 4; copy++) {
+    for (const suit of cardSuits) {
+      for (const rank of cardRanks) {
+        deck.push({ rank, suit });
+      }
+    }
+  }
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function drawCard() {
+  if (blackjackDeck.length === 0) {
+    blackjackDeck = createShuffledDeck();
+  }
+  return blackjackDeck.pop();
+}
+
+function handValue(hand) {
+  let total = 0;
+  let aces = 0;
+  for (const card of hand) {
+    if (card.rank === "A") {
+      total += 11;
+      aces++;
+    } else if (["K", "Q", "J"].includes(card.rank)) {
+      total += 10;
+    } else {
+      total += Number(card.rank);
+    }
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return total;
+}
+
+function renderHand(container, hand, hideCards = false) {
+  container.replaceChildren();
+  hand.forEach((card) => {
+    const cardElement = document.createElement("div");
+    if (hideCards) {
+      cardElement.className = "playing-card card-back";
+      cardElement.setAttribute("aria-label", "Face-down card");
+      cardElement.textContent = "◆";
+    } else {
+      const isRed = card.suit === "♥" || card.suit === "♦";
+      cardElement.className = "playing-card" + (isRed ? " red-card" : "");
+      cardElement.setAttribute("aria-label", card.rank + " of " + card.suit);
+      cardElement.innerHTML = "<span>" + card.rank + "</span><span>" + card.suit + "</span>";
+    }
+    container.appendChild(cardElement);
+  });
+}
+
+function renderBlackjackHands(revealDealer = false) {
+  const dealerElement = document.getElementById("dealer-hand");
+  const playerElement = document.getElementById("player-hand");
+  renderHand(dealerElement, dealerHand, !revealDealer && blackjackRoundActive);
+  renderHand(playerElement, playerHand);
+  dealerElement.setAttribute("aria-label", revealDealer ? "Dealer cards revealed" : "Dealer cards face down");
+  document.getElementById("player-total").textContent = "Total: " + handValue(playerHand);
+  document.getElementById("dealer-total").textContent = revealDealer
+    ? "Total: " + handValue(dealerHand)
+    : "Total: hidden";
+}
+
+function finishBlackjackRound(outcome) {
+  blackjackRoundActive = false;
+  renderBlackjackHands(true);
+  document.getElementById("hit-blackjack").disabled = true;
+  document.getElementById("stand-blackjack").disabled = true;
+  document.getElementById("deal-blackjack").disabled = false;
+
+  if (outcome === "win") {
+    const isBlackjack = handValue(playerHand) === 21 && playerHand.length === 2;
+    const winnings = isBlackjack ? Math.floor(blackjackWager * 1.5) : blackjackWager;
+    money += blackjackWager + winnings;
+    document.getElementById("blackjack-result").textContent =
+      (isBlackjack ? "Blackjack! " : "You win! ") + "You won $" + winnings + ".";
+  } else if (outcome === "push") {
+    money += blackjackWager;
+    document.getElementById("blackjack-result").textContent = "Push. Your $" + blackjackWager + " bet is returned.";
+  } else {
+    document.getElementById("blackjack-result").textContent =
+      outcome === "bust" ? "You busted. You lost $" + blackjackWager + "." : "Dealer wins. You lost $" + blackjackWager + ".";
+  }
+  updateWalletDisplay();
+}
+
+function dealerTurn() {
+  while (handValue(dealerHand) < 17) {
+    dealerHand.push(drawCard());
+  }
+  const playerTotal = handValue(playerHand);
+  const dealerTotal = handValue(dealerHand);
+  renderBlackjackHands(true);
+  if (dealerTotal > 21 || playerTotal > dealerTotal) {
+    finishBlackjackRound("win");
+  } else if (playerTotal === dealerTotal) {
+    finishBlackjackRound("push");
+  } else {
+    finishBlackjackRound("lose");
+  }
+}
+
+document.getElementById("show-roulette").addEventListener("click", function () {
+  showCasinoGame("roulette");
+});
+
+document.getElementById("show-blackjack").addEventListener("click", function () {
+  showCasinoGame("blackjack");
+});
+
+document.getElementById("show-slots").addEventListener("click", function () {
+  showCasinoGame("slots");
+});
+
+document.getElementById("deal-blackjack").addEventListener("click", function () {
+  const validation = validateWager();
+  const result = document.getElementById("blackjack-result");
+  if (validation.error) {
+    result.textContent = validation.error;
+    return;
+  }
+
+  blackjackWager = validation.wager;
+  money -= blackjackWager;
+  playerHand = [drawCard(), drawCard()];
+  dealerHand = [drawCard(), drawCard()];
+  blackjackRoundActive = true;
+  document.getElementById("deal-blackjack").disabled = true;
+  document.getElementById("hit-blackjack").disabled = false;
+  document.getElementById("stand-blackjack").disabled = false;
+  result.textContent = "Your turn: hit or stand.";
+  renderBlackjackHands();
+  updateWalletDisplay();
+
+  const playerHasBlackjack = handValue(playerHand) === 21;
+  const dealerHasBlackjack = handValue(dealerHand) === 21;
+  if (playerHasBlackjack || dealerHasBlackjack) {
+    renderBlackjackHands(true);
+    if (playerHasBlackjack && dealerHasBlackjack) {
+      finishBlackjackRound("push");
+    } else if (playerHasBlackjack) {
+      finishBlackjackRound("win");
+    } else {
+      finishBlackjackRound("lose");
+    }
+  }
+});
+
+document.getElementById("hit-blackjack").addEventListener("click", function () {
+  if (!blackjackRoundActive) return;
+  playerHand.push(drawCard());
+  renderBlackjackHands();
+  if (handValue(playerHand) > 21) {
+    finishBlackjackRound("bust");
+  }
+});
+
+document.getElementById("stand-blackjack").addEventListener("click", function () {
+  if (blackjackRoundActive) dealerTurn();
+});
+
+const slotSymbols = ["🍒", "🍋", "🍊", "🍇", "🔔", "⭐", "7️⃣"];
+const slotReels = [1, 2, 3].map((number) => document.getElementById("slot-reel-" + number));
+const slotsButton = document.getElementById("spin-slots");
+
+function spinSlotReel(reel, result, duration) {
+  return new Promise((resolve) => {
+    const timer = setInterval(function () {
+      reel.textContent = slotSymbols[Math.floor(Math.random() * slotSymbols.length)];
+    }, 75);
+    setTimeout(function () {
+      clearInterval(timer);
+      reel.textContent = result;
+      resolve();
+    }, duration);
+  });
+}
+
+slotsButton.addEventListener("click", async function () {
+  const validation = validateWager();
+  const result = document.getElementById("slots-result");
+  if (validation.error) {
+    result.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const symbols = slotReels.map(() => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+  money -= wager;
+  updateWalletDisplay();
+  result.textContent = "The reels are spinning...";
+  slotsButton.disabled = true;
+
+  try {
+    await Promise.all(slotReels.map((reel, index) =>
+      spinSlotReel(reel, symbols[index], 900 + index * 400)
+    ));
+
+    const counts = new Map();
+    for (const symbol of symbols) {
+      counts.set(symbol, (counts.get(symbol) || 0) + 1);
+    }
+    const matchCount = Math.max(...counts.values());
+    if (matchCount === 3) {
+      const payout = wager * 5;
+      money += payout;
+      result.textContent = symbols.join(" ") + " — three of a kind! You won $" + (payout - wager) + ".";
+    } else if (matchCount === 2) {
+      const payout = wager * 2;
+      money += payout;
+      result.textContent = symbols.join(" ") + " — two match! You won $" + (payout - wager) + ".";
+    } else {
+      result.textContent = symbols.join(" ") + " — no match. You lost $" + wager + ".";
+    }
+  } finally {
+    slotsButton.disabled = false;
+    updateWalletDisplay();
+  }
+});
+
 drawRouletteWheel();
+showCasinoGame("slots");
 updateWalletDisplay();

@@ -36,21 +36,57 @@
     <section id="casino-screen" hidden aria-labelledby="casino-title">
       <h1 id="casino-title">Casino</h1>
       <p id="casino-wallet" aria-live="polite">Cash: $0</p>
-      <p>Bet on red, black, or green. Red and black pay 1:1; green pays 35:1.</p>
-      <div class="roulette-stage">
-        <div class="roulette-pointer" aria-hidden="true"></div>
-        <canvas id="roulette-wheel" width="440" height="440" role="img" aria-label="Roulette wheel with 38 pockets"></canvas>
+      <div class="casino-games" aria-label="Casino games">
+        <button id="show-roulette" type="button" aria-pressed="false">Roulette</button>
+        <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
+        <button id="show-slots" type="button" aria-pressed="true">Slots</button>
       </div>
       <label for="wager">Custom wager ($50 minimum)</label>
       <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
-      <label for="roulette-bet">Bet on</label>
-      <select id="roulette-bet">
-        <option value="red">Red</option>
-        <option value="black">Black</option>
-        <option value="green">Green (0)</option>
-      </select>
-      <button id="spin-roulette" type="button">Spin roulette</button>
-      <p id="casino-result" aria-live="polite"></p>
+      <div id="roulette-game" hidden>
+        <p>Bet on red, black, or green. Red and black pay 1:1; green pays 35:1.</p>
+        <div class="roulette-stage">
+          <div class="roulette-pointer" aria-hidden="true"></div>
+          <canvas id="roulette-wheel" width="440" height="440" role="img" aria-label="Roulette wheel with 38 pockets"></canvas>
+        </div>
+        <label for="roulette-bet">Bet on</label>
+        <select id="roulette-bet">
+          <option value="red">Red</option>
+          <option value="black">Black</option>
+          <option value="green">Green (0)</option>
+        </select>
+        <button id="spin-roulette" type="button">Spin roulette</button>
+        <p id="casino-result" aria-live="polite"></p>
+      </div>
+      <div id="blackjack-game" hidden>
+        <p>Beat the dealer by getting closer to 21 without going over. Blackjack pays 3:2; other wins pay 1:1.</p>
+        <div class="blackjack-table">
+          <section class="hand-area" aria-labelledby="dealer-heading">
+            <h2 id="dealer-heading">Dealer</h2>
+            <div id="dealer-hand" class="card-hand" aria-label="Dealer cards"></div>
+            <p id="dealer-total" aria-live="polite">Total: hidden</p>
+          </section>
+          <section class="hand-area" aria-labelledby="player-heading">
+            <h2 id="player-heading">You</h2>
+            <div id="player-hand" class="card-hand" aria-label="Your cards"></div>
+            <p id="player-total" aria-live="polite">Total: 0</p>
+          </section>
+        </div>
+        <button id="deal-blackjack" type="button">Deal</button>
+        <button id="hit-blackjack" type="button" disabled>Hit</button>
+        <button id="stand-blackjack" type="button" disabled>Stand</button>
+        <p id="blackjack-result" aria-live="polite">Place your bet and deal to start.</p>
+      </div>
+      <div id="slots-game">
+        <p>Spin three reels. Three matching symbols pay 5× your bet; two matching symbols pay 2×.</p>
+        <div class="slot-machine" role="img" aria-label="Three slot machine reels">
+          <div class="slot-reel" id="slot-reel-1" aria-hidden="true">🍒</div>
+          <div class="slot-reel" id="slot-reel-2" aria-hidden="true">🍋</div>
+          <div class="slot-reel" id="slot-reel-3" aria-hidden="true">🔔</div>
+        </div>
+        <button id="spin-slots" type="button">Spin slots</button>
+        <p id="slots-result" aria-live="polite">Place your bet and spin to play.</p>
+      </div>
       <button id="casino-menu" type="button">Main menu</button>
     </section>
   </main>
