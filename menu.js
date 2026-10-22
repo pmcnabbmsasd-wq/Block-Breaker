@@ -177,7 +177,7 @@ function renderCaseShowcase(prize, leftEl, centerEl, rightEl, displayEl, faceEl)
     { name: "M4A1-S | Knight", color: "#ec4899", rarity: "rare" },
     { name: "AK-47 | Redline", color: "#f97316", rarity: "epic" }
   ];
-  const chosenIndex = Math.floor(Math.random() * 3);
+  const chosenIndex = 1;
   previewItems[chosenIndex] = { name: prize.name, color: prize.color, rarity: "legendary" };
 
   const cards = [leftEl, centerEl, rightEl];
@@ -190,8 +190,7 @@ function renderCaseShowcase(prize, leftEl, centerEl, rightEl, displayEl, faceEl)
   });
 
   displayEl.style.setProperty("--case-glow", prize.color);
-  displayEl.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
-  faceEl.textContent = "🔫";
+  faceEl.textContent = "OPENED";
 }
 
 function applyPaddleBallSkin(skin) {
@@ -546,8 +545,7 @@ openCaseButton.addEventListener("click", function () {
   caseDisplay.classList.remove("opening");
   caseDisplay.classList.add("spinning");
   caseDisplay.style.setProperty("--case-glow", "#d4af37");
-  caseFace.textContent = "🎁";
-  caseDisplay.style.background = "linear-gradient(135deg, #d4af37, #7a5b00)";
+  caseFace.textContent = "LOCKED";
   document.getElementById("case-reveal").textContent = "Opening...";
   caseOpeningResult.textContent = "Opening the case...";
   openCaseButton.disabled = true;
@@ -586,8 +584,7 @@ openPaddleBallCaseButton.addEventListener("click", function () {
   updateWalletDisplay();
   paddleBallCaseDisplay.classList.remove("revealed");
   paddleBallCaseDisplay.classList.add("spinning");
-  paddleBallCaseFace.textContent = "🎁";
-  paddleBallCaseDisplay.style.background = "linear-gradient(135deg, #d4af37, #7a5b00)";
+  paddleBallCaseFace.textContent = "LOCKED";
   paddleBallCaseResult.textContent = "Opening your paddle and ball case...";
   document.getElementById("paddle-ball-case-reveal").textContent = "Opening...";
   openPaddleBallCaseButton.disabled = true;
