@@ -11,6 +11,10 @@ const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
 const slotsGame = document.getElementById("slots-game");
 const coinFlipGame = document.getElementById("coin-flip-game");
+const caseOpeningGame = document.getElementById("case-opening-game");
+const caseDisplay = document.getElementById("case-display");
+const caseOpeningResult = document.getElementById("case-opening-result");
+const openCaseButton = document.getElementById("open-case");
 const wagerMinimum = 50;
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
@@ -112,12 +116,56 @@ function validateWager() {
   return { wager };
 }
 
+function playCaseSpinSound() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return;
+  }
+
+  const audioContext = new AudioContextClass();
+  const master = audioContext.createGain();
+  master.gain.value = 0.08;
+  master.connect(audioContext.destination);
+
+  const oscillator = audioContext.createOscillator();
+  const filter = audioContext.createBiquadFilter();
+  const tremolo = audioContext.createOscillator();
+  const tremoloGain = audioContext.createGain();
+
+  oscillator.type = "sawtooth";
+  oscillator.frequency.setValueAtTime(180, audioContext.currentTime);
+  oscillator.frequency.exponentialRampToValueAtTime(960, audioContext.currentTime + 0.9);
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(2600, audioContext.currentTime);
+  filter.Q.value = 2;
+
+  tremolo.type = "triangle";
+  tremolo.frequency.value = 8;
+  tremoloGain.gain.value = 75;
+
+  oscillator.connect(filter);
+  filter.connect(master);
+  tremolo.connect(tremoloGain);
+  tremoloGain.connect(oscillator.frequency);
+
+  oscillator.start();
+  oscillator.stop(audioContext.currentTime + 1.1);
+  tremolo.start();
+  tremolo.stop(audioContext.currentTime + 1.1);
+
+  setTimeout(function () {
+    audioContext.close();
+  }, 1200);
+}
+
 function showCasinoGame(game) {
   rouletteGame.hidden = game !== "roulette";
   blackjackGame.hidden = game !== "blackjack";
   slotsGame.hidden = game !== "slots";
   coinFlipGame.hidden = game !== "coin-flip";
-  for (const name of ["roulette", "blackjack", "slots", "coin-flip"]) {
+  caseOpeningGame.hidden = game !== "case-opening";
+  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "case-opening"]) {
     document.getElementById("show-" + name).setAttribute("aria-pressed", String(name === game));
   }
 }
@@ -148,6 +196,21 @@ document.getElementById("game-menu").addEventListener("click", function () {
 document.getElementById("casino-menu").addEventListener("click", function () {
   showScreen("menu");
 });
+
+document.getElementById("show-case-opening").addEventListener("click", function () {
+  showCasinoGame("case-opening");
+});
+
+const casePrizeTable = [
+  { name: "P250 | Sand Dune", value: 80, weight: 28, color: "#d2d2d2" },
+  { name: "USP-S | Dark Water", value: 120, weight: 22, color: "#8ec5ff" },
+  { name: "Desert Eagle | Blaze", value: 180, weight: 17, color: "#8b5cf6" },
+  { name: "AK-47 | Redline", value: 300, weight: 12, color: "#f97316" },
+  { name: "M4A1-S | Knight", value: 450, weight: 9, color: "#ec4899" },
+  { name: "AWP | Asiimov", value: 700, weight: 7, color: "#10b981" },
+  { name: "Karambit | Doppler", value: 1200, weight: 4, color: "#f59e0b" },
+  { name: "★ Butterfly Knife | Fade", value: 2500, weight: 1, color: "#facc15" }
+];
 
 spinButton.addEventListener("click", async function () {
   const validation = validateWager();
@@ -360,6 +423,7 @@ document.getElementById("stand-blackjack").addEventListener("click", function ()
 });
 
 const slotSymbols = ["🍒", "🍋", "🍊", "🍇", "🔔", "⭐", "7️⃣"];
+const weightedSlotSymbols = ["🍒", "🍒", "🍋", "🍋", "🍊", "🍊", "🍇", "🔔", "⭐", "7️⃣"];
 const slotReels = [1, 2, 3].map((number) => document.getElementById("slot-reel-" + number));
 const slotsButton = document.getElementById("spin-slots");
 
@@ -385,7 +449,7 @@ slotsButton.addEventListener("click", async function () {
   }
 
   const wager = validation.wager;
-  const symbols = slotReels.map(() => slotSymbols[Math.floor(Math.random() * slotSymbols.length)]);
+  const symbols = slotReels.map(() => weightedSlotSymbols[Math.floor(Math.random() * weightedSlotSymbols.length)]);
   money -= wager;
   updateWalletDisplay();
   result.textContent = "The reels are spinning...";
@@ -416,6 +480,46 @@ slotsButton.addEventListener("click", async function () {
     slotsButton.disabled = false;
     updateWalletDisplay();
   }
+});
+
+openCaseButton.addEventListener("click", function () {
+  const validation = validateWager();
+  if (validation.error) {
+    caseOpeningResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  if (wager > money) {
+    caseOpeningResult.textContent = "You cannot afford to open this case.";
+    return;
+  }
+
+  money -= wager;
+  updateWalletDisplay();
+  caseDisplay.classList.remove("revealed");
+  caseDisplay.classList.remove("opening");
+  caseDisplay.classList.add("spinning");
+  caseDisplay.textContent = "🎁";
+  caseDisplay.style.background = "linear-gradient(135deg, #d4af37, #7a5b00)";
+  document.getElementById("case-reveal").textContent = "Opening...";
+  caseOpeningResult.textContent = "Opening the case...";
+  openCaseButton.disabled = true;
+  playCaseSpinSound();
+
+  setTimeout(function () {
+    const weightedItems = casePrizeTable.flatMap((item) => Array(item.weight).fill(item));
+    const prize = weightedItems[Math.floor(Math.random() * weightedItems.length)];
+    money += prize.value;
+    caseDisplay.classList.remove("spinning");
+    caseDisplay.classList.add("revealed");
+    caseDisplay.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
+    caseDisplay.textContent = "🔫";
+    document.getElementById("case-reveal").textContent = prize.name + " — $" + prize.value;
+    caseOpeningResult.textContent = "You opened " + prize.name + " for $" + prize.value + ".";
+    updateWalletDisplay();
+    openCaseButton.disabled = false;
+  }, 1200);
 });
 
 const coin = document.getElementById("coin");

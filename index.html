@@ -41,6 +41,7 @@
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
+        <button id="show-case-opening" type="button" aria-pressed="false">Case Opening</button>
       </div>
       <label for="wager">Custom wager ($50 minimum)</label>
       <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
@@ -103,6 +104,15 @@
         </div>
         <button id="flip-coin" type="button">Flip coin</button>
         <p id="coin-result" aria-live="polite">Place your bet and flip to play.</p>
+      </div>
+      <div id="case-opening-game" hidden>
+        <p>Open a CS:GO-style case and reveal a random weapon skin.</p>
+        <div class="case-stage">
+          <div id="case-display" class="case-display" aria-live="polite">🎁</div>
+          <div id="case-reveal" class="case-reveal">No item yet</div>
+        </div>
+        <button id="open-case" type="button">Open Case</button>
+        <p id="case-opening-result" aria-live="polite">Use your wager to open a case.</p>
       </div>
       <button id="casino-menu" type="button">Main menu</button>
     </section>
