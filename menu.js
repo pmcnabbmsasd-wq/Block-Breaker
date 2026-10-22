@@ -13,6 +13,10 @@ const slotsGame = document.getElementById("slots-game");
 const coinFlipGame = document.getElementById("coin-flip-game");
 const caseOpeningGame = document.getElementById("case-opening-game");
 const caseDisplay = document.getElementById("case-display");
+const caseFace = document.getElementById("case-face");
+const caseItemLeft = document.getElementById("case-item-left");
+const caseItemCenter = document.getElementById("case-item-center");
+const caseItemRight = document.getElementById("case-item-right");
 const caseOpeningResult = document.getElementById("case-opening-result");
 const openCaseButton = document.getElementById("open-case");
 const wagerMinimum = 50;
@@ -157,6 +161,29 @@ function playCaseSpinSound() {
   setTimeout(function () {
     audioContext.close();
   }, 1200);
+}
+
+function renderCaseShowcase(prize) {
+  const previewItems = [
+    { name: "USP-S | Dark Water", color: "#8ec5ff", rarity: "common" },
+    { name: "M4A1-S | Knight", color: "#ec4899", rarity: "rare" },
+    { name: "AK-47 | Redline", color: "#f97316", rarity: "epic" }
+  ];
+  const chosenIndex = Math.floor(Math.random() * 3);
+  previewItems[chosenIndex] = { name: prize.name, color: prize.color, rarity: "legendary" };
+
+  const cards = [caseItemLeft, caseItemCenter, caseItemRight];
+  cards.forEach((card, index) => {
+    const item = previewItems[index];
+    card.style.setProperty("--item-color", item.color);
+    card.classList.toggle("is-highlighted", index === chosenIndex);
+    card.querySelector(".case-item-name").textContent = item.name;
+    card.dataset.rarity = item.rarity;
+  });
+
+  caseDisplay.style.setProperty("--case-glow", prize.color);
+  caseDisplay.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
+  caseFace.textContent = "🔫";
 }
 
 function showCasinoGame(game) {
@@ -344,7 +371,7 @@ function finishBlackjackRound(outcome) {
 }
 
 function dealerTurn() {
-  while (handValue(dealerHand) < 17) {
+  while (handValue(dealerHand) < 16) {
     dealerHand.push(drawCard());
   }
   const playerTotal = handValue(playerHand);
@@ -500,7 +527,8 @@ openCaseButton.addEventListener("click", function () {
   caseDisplay.classList.remove("revealed");
   caseDisplay.classList.remove("opening");
   caseDisplay.classList.add("spinning");
-  caseDisplay.textContent = "🎁";
+  caseDisplay.style.setProperty("--case-glow", "#d4af37");
+  caseFace.textContent = "🎁";
   caseDisplay.style.background = "linear-gradient(135deg, #d4af37, #7a5b00)";
   document.getElementById("case-reveal").textContent = "Opening...";
   caseOpeningResult.textContent = "Opening the case...";
@@ -511,15 +539,14 @@ openCaseButton.addEventListener("click", function () {
     const weightedItems = casePrizeTable.flatMap((item) => Array(item.weight).fill(item));
     const prize = weightedItems[Math.floor(Math.random() * weightedItems.length)];
     money += prize.value;
+    renderCaseShowcase(prize);
     caseDisplay.classList.remove("spinning");
     caseDisplay.classList.add("revealed");
-    caseDisplay.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
-    caseDisplay.textContent = "🔫";
     document.getElementById("case-reveal").textContent = prize.name + " — $" + prize.value;
     caseOpeningResult.textContent = "You opened " + prize.name + " for $" + prize.value + ".";
     updateWalletDisplay();
     openCaseButton.disabled = false;
-  }, 1200);
+  }, 1400);
 });
 
 const coin = document.getElementById("coin");

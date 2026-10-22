@@ -155,28 +155,117 @@ button:focus-visible {
   place-items: center;
 }
 
-.case-display {
+.case-showcase {
+  position: relative;
   display: grid;
-  width: 160px;
-  height: 160px;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  align-items: center;
+  gap: 14px;
+  width: min(100%, 360px);
+  padding: 12px 14px;
+  border-radius: 999px;
+  background: rgba(255, 200, 70, 0.12);
+  box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.35), 0 0 50px rgba(255, 207, 81, 0.2);
+}
+
+.case-item {
+  --item-color: #8ec5ff;
+  position: relative;
+  display: grid;
   place-items: center;
-  border: 3px solid #d7bd75;
-  border-radius: 24px;
+  height: 110px;
+  padding: 8px 10px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(0,0,0,0.1));
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  text-align: center;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.case-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--item-color) 80%, white), rgba(0,0,0,0.18));
+  opacity: 0.8;
+}
+
+.case-item.is-highlighted {
+  transform: scale(1.08);
+  box-shadow: 0 0 18px var(--item-color), inset 0 0 12px rgba(255,255,255,0.18);
+  border-color: rgba(255, 255, 255, 0.9);
+}
+
+.case-item-name {
+  position: relative;
+  z-index: 1;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+.case-item-left,
+.case-item-right {
+  transform: scale(0.9);
+  opacity: 0.8;
+}
+
+.case-scene {
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+}
+
+.case-display {
+  --case-glow: #d4af37;
+  position: relative;
+  display: grid;
+  width: 150px;
+  height: 150px;
+  place-items: center;
+  overflow: hidden;
+  border: 4px solid #d7bd75;
+  border-radius: 50%;
   background: linear-gradient(135deg, #d4af37, #4c3000);
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45), 0 12px 24px rgba(0, 0, 0, 0.35);
-  font-size: 64px;
-  line-height: 1;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45), 0 0 30px rgba(255, 216, 102, 0.25), 0 12px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+.case-display::before {
+  content: "";
+  position: absolute;
+  inset: 11%;
+  border: 2px solid rgba(255,255,255,0.5);
+  border-radius: 50%;
 }
 
 .case-display.spinning {
-  animation: case-spin 0.55s linear infinite;
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45), 0 0 30px rgba(255, 216, 102, 0.8), 0 12px 24px rgba(0, 0, 0, 0.35);
+  animation: case-spin 0.8s cubic-bezier(0.12, 0.82, 0.18, 1) infinite;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45), 0 0 50px rgba(255, 216, 102, 0.8), 0 12px 24px rgba(0, 0, 0, 0.35);
 }
 
 .case-display.revealed {
-  transform: scale(1.06);
-  filter: saturate(1.25);
+  animation: case-reveal 0.55s cubic-bezier(0.2, 0.8, 0.3, 1);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.45), 0 0 40px var(--case-glow), 0 12px 24px rgba(0, 0, 0, 0.35);
+  filter: saturate(1.35) brightness(1.1);
+}
+
+.case-face {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 70%;
+  height: 70%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 16px rgba(255,255,255,0.2);
+  font-size: 54px;
+  line-height: 1;
 }
 
 .case-reveal {
@@ -190,25 +279,31 @@ button:focus-visible {
 
 @keyframes case-spin {
   0% {
-    transform: scale(0.96) rotateY(0deg) rotateZ(-7deg);
-    filter: brightness(0.9);
+    transform: rotateY(0deg) rotateX(16deg) rotateZ(-9deg) scale(0.96);
+    filter: brightness(0.8);
   }
   25% {
-    transform: scale(1.02) rotateY(90deg) rotateZ(7deg);
-    filter: brightness(1.1);
+    transform: rotateY(90deg) rotateX(-14deg) rotateZ(9deg) scale(1.04);
+    filter: brightness(1.08);
   }
   50% {
-    transform: scale(1.08) rotateY(180deg) rotateZ(-6deg);
-    filter: brightness(1.25);
+    transform: rotateY(180deg) rotateX(18deg) rotateZ(-7deg) scale(1.12);
+    filter: brightness(1.28);
   }
   75% {
-    transform: scale(1.02) rotateY(270deg) rotateZ(7deg);
-    filter: brightness(1.15);
+    transform: rotateY(270deg) rotateX(-14deg) rotateZ(10deg) scale(1.03);
+    filter: brightness(1.18);
   }
   100% {
-    transform: scale(0.96) rotateY(360deg) rotateZ(-7deg);
-    filter: brightness(1);
+    transform: rotateY(360deg) rotateX(16deg) rotateZ(-9deg) scale(0.96);
+    filter: brightness(0.9);
   }
+}
+
+@keyframes case-reveal {
+  0% { transform: scale(0.85) rotate(-3deg); box-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+  45% { transform: scale(1.1) rotate(2deg); box-shadow: 0 0 40px var(--case-glow); }
+  100% { transform: scale(1.02) rotate(0deg); box-shadow: 0 0 40px var(--case-glow), 0 12px 24px rgba(0, 0, 0, 0.35); }
 }
 
 .coin-stage {
