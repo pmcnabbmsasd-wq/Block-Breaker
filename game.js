@@ -224,12 +224,16 @@ function movePaddleLeft() {
   paddle.x = paddle.x - paddle.speed;
 }
 
+function movePaddleRight() {
+  paddle.x = paddle.x + paddle.speed;
+}
+
 function movePaddle() {
   if (keys["arrowleft"] || keys["a"]) {
     movePaddleLeft();
   }
   if (keys["arrowright"] || keys["d"]) {
-    paddle.x = paddle.x + paddle.speed;
+    movePaddleRight();
   }
 
   // Keep the paddle on the screen.
