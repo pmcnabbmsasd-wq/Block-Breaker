@@ -220,9 +220,13 @@ function update() {
   updateParticles();
 }
 
+function movePaddleLeft() {
+  paddle.x = paddle.x - paddle.speed;
+}
+
 function movePaddle() {
   if (keys["arrowleft"] || keys["a"]) {
-    paddle.x = paddle.x - paddle.speed;
+    movePaddleLeft();
   }
   if (keys["arrowright"] || keys["d"]) {
     paddle.x = paddle.x + paddle.speed;
