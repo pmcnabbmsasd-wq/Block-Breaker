@@ -108,6 +108,13 @@ const paddle = {
   speed: 6
 };
 
+const defaultPaddleSkin = {
+  name: "Classic",
+  paddleColor: "#ffffff",
+  ballColor: "#ffffff"
+};
+let activePaddleSkin = { ...defaultPaddleSkin };
+
 
 // ------------------------------------------------------------
 // THE BRICKS (the list is filled in by makeBricks() in bricks.js)
@@ -455,11 +462,11 @@ function draw() {
     }
   }
 
-  ctx.fillStyle = "white";
+  ctx.fillStyle = activePaddleSkin.paddleColor;
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
   if (!boss) {
     for (const activeBall of [ball, ...extraBalls]) {
-      ctx.fillStyle = activeBall.grenadeArmed ? "#f05a3e" : "white";
+      ctx.fillStyle = activeBall.grenadeArmed ? "#f05a3e" : activePaddleSkin.ballColor;
       ctx.fillRect(activeBall.x, activeBall.y, activeBall.width, activeBall.height);
     }
   }

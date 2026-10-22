@@ -19,6 +19,14 @@ const caseItemCenter = document.getElementById("case-item-center");
 const caseItemRight = document.getElementById("case-item-right");
 const caseOpeningResult = document.getElementById("case-opening-result");
 const openCaseButton = document.getElementById("open-case");
+const paddleBallCaseGame = document.getElementById("paddle-ball-case-game");
+const paddleBallCaseDisplay = document.getElementById("paddle-ball-case-display");
+const paddleBallCaseFace = document.getElementById("paddle-ball-case-face");
+const paddleBallCaseResult = document.getElementById("paddle-ball-case-result");
+const openPaddleBallCaseButton = document.getElementById("open-paddle-ball-case");
+const paddleCaseItemLeft = document.getElementById("paddle-case-item-left");
+const paddleCaseItemCenter = document.getElementById("paddle-case-item-center");
+const paddleCaseItemRight = document.getElementById("paddle-case-item-right");
 const wagerMinimum = 50;
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
@@ -163,7 +171,7 @@ function playCaseSpinSound() {
   }, 1200);
 }
 
-function renderCaseShowcase(prize) {
+function renderCaseShowcase(prize, leftEl, centerEl, rightEl, displayEl, faceEl) {
   const previewItems = [
     { name: "USP-S | Dark Water", color: "#8ec5ff", rarity: "common" },
     { name: "M4A1-S | Knight", color: "#ec4899", rarity: "rare" },
@@ -172,7 +180,7 @@ function renderCaseShowcase(prize) {
   const chosenIndex = Math.floor(Math.random() * 3);
   previewItems[chosenIndex] = { name: prize.name, color: prize.color, rarity: "legendary" };
 
-  const cards = [caseItemLeft, caseItemCenter, caseItemRight];
+  const cards = [leftEl, centerEl, rightEl];
   cards.forEach((card, index) => {
     const item = previewItems[index];
     card.style.setProperty("--item-color", item.color);
@@ -181,9 +189,17 @@ function renderCaseShowcase(prize) {
     card.dataset.rarity = item.rarity;
   });
 
-  caseDisplay.style.setProperty("--case-glow", prize.color);
-  caseDisplay.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
-  caseFace.textContent = "🔫";
+  displayEl.style.setProperty("--case-glow", prize.color);
+  displayEl.style.background = "linear-gradient(135deg, " + prize.color + ", #111827)";
+  faceEl.textContent = "🔫";
+}
+
+function applyPaddleBallSkin(skin) {
+  activePaddleSkin = {
+    name: skin.name,
+    paddleColor: skin.paddleColor,
+    ballColor: skin.ballColor
+  };
 }
 
 function showCasinoGame(game) {
@@ -192,8 +208,12 @@ function showCasinoGame(game) {
   slotsGame.hidden = game !== "slots";
   coinFlipGame.hidden = game !== "coin-flip";
   caseOpeningGame.hidden = game !== "case-opening";
-  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "case-opening"]) {
-    document.getElementById("show-" + name).setAttribute("aria-pressed", String(name === game));
+  paddleBallCaseGame.hidden = game !== "paddle-ball-case";
+  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "case-opening", "paddle-ball-case"]) {
+    const button = document.getElementById("show-" + name);
+    if (button) {
+      button.setAttribute("aria-pressed", String(name === game));
+    }
   }
 }
 
@@ -226,6 +246,10 @@ document.getElementById("casino-menu").addEventListener("click", function () {
 
 document.getElementById("show-case-opening").addEventListener("click", function () {
   showCasinoGame("case-opening");
+});
+
+document.getElementById("show-paddle-ball-case").addEventListener("click", function () {
+  showCasinoGame("paddle-ball-case");
 });
 
 const casePrizeTable = [
@@ -510,19 +534,13 @@ slotsButton.addEventListener("click", async function () {
 });
 
 openCaseButton.addEventListener("click", function () {
-  const validation = validateWager();
-  if (validation.error) {
-    caseOpeningResult.textContent = validation.error;
-    return;
-  }
-
-  const wager = validation.wager;
-  if (wager > money) {
+  const caseCost = 50;
+  if (money < caseCost) {
     caseOpeningResult.textContent = "You cannot afford to open this case.";
     return;
   }
 
-  money -= wager;
+  money -= caseCost;
   updateWalletDisplay();
   caseDisplay.classList.remove("revealed");
   caseDisplay.classList.remove("opening");
@@ -539,13 +557,52 @@ openCaseButton.addEventListener("click", function () {
     const weightedItems = casePrizeTable.flatMap((item) => Array(item.weight).fill(item));
     const prize = weightedItems[Math.floor(Math.random() * weightedItems.length)];
     money += prize.value;
-    renderCaseShowcase(prize);
+    renderCaseShowcase(prize, caseItemLeft, caseItemCenter, caseItemRight, caseDisplay, caseFace);
     caseDisplay.classList.remove("spinning");
     caseDisplay.classList.add("revealed");
     document.getElementById("case-reveal").textContent = prize.name + " — $" + prize.value;
     caseOpeningResult.textContent = "You opened " + prize.name + " for $" + prize.value + ".";
     updateWalletDisplay();
     openCaseButton.disabled = false;
+  }, 1400);
+});
+
+const paddleBallPrizeTable = [
+  { name: "Neon Pulse", paddleColor: "#56ccf2", ballColor: "#ffe66d", price: 95 },
+  { name: "Solar Flare", paddleColor: "#ffb703", ballColor: "#fb8500", price: 110 },
+  { name: "Electric Mint", paddleColor: "#80ffdb", ballColor: "#64dfdf", price: 135 },
+  { name: "Lava Pop", paddleColor: "#ff5d8f", ballColor: "#ff9f1c", price: 150 },
+  { name: "Void Rift", paddleColor: "#9d4edd", ballColor: "#c77dff", price: 180 }
+];
+
+openPaddleBallCaseButton.addEventListener("click", function () {
+  const caseCost = 50;
+  if (money < caseCost) {
+    paddleBallCaseResult.textContent = "You cannot afford to open this case.";
+    return;
+  }
+
+  money -= caseCost;
+  updateWalletDisplay();
+  paddleBallCaseDisplay.classList.remove("revealed");
+  paddleBallCaseDisplay.classList.add("spinning");
+  paddleBallCaseFace.textContent = "🎁";
+  paddleBallCaseDisplay.style.background = "linear-gradient(135deg, #d4af37, #7a5b00)";
+  paddleBallCaseResult.textContent = "Opening your paddle and ball case...";
+  document.getElementById("paddle-ball-case-reveal").textContent = "Opening...";
+  openPaddleBallCaseButton.disabled = true;
+  playCaseSpinSound();
+
+  setTimeout(function () {
+    const prize = paddleBallPrizeTable[Math.floor(Math.random() * paddleBallPrizeTable.length)];
+    applyPaddleBallSkin(prize);
+    renderCaseShowcase(prize, document.getElementById("paddle-case-item-left"), document.getElementById("paddle-case-item-center"), document.getElementById("paddle-case-item-right"), paddleBallCaseDisplay, paddleBallCaseFace);
+    paddleBallCaseDisplay.classList.remove("spinning");
+    paddleBallCaseDisplay.classList.add("revealed");
+    document.getElementById("paddle-ball-case-reveal").textContent = prize.name + " — applied to paddle and ball";
+    paddleBallCaseResult.textContent = "You unlocked " + prize.name + ".";
+    updateWalletDisplay();
+    openPaddleBallCaseButton.disabled = false;
   }, 1400);
 });
 

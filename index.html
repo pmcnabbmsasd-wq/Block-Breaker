@@ -42,6 +42,7 @@
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-case-opening" type="button" aria-pressed="false">Case Opening</button>
+        <button id="show-paddle-ball-case" type="button" aria-pressed="false">Paddle & Ball Case</button>
       </div>
       <label for="wager">Custom wager ($50 minimum)</label>
       <input id="wager" type="number" min="50" step="1" value="50" inputmode="numeric">
@@ -126,6 +127,28 @@
         </div>
         <button id="open-case" type="button">Open Case</button>
         <p id="case-opening-result" aria-live="polite">Use your wager to open a case.</p>
+      </div>
+      <div id="paddle-ball-case-game" hidden>
+        <p>Open a paddle and ball skin case. Each case costs $50 and applies a cosmetic instantly.</p>
+        <div class="case-stage">
+          <div class="case-showcase" aria-live="polite">
+            <div id="paddle-case-item-left" class="case-item case-item-left">
+              <span class="case-item-name">Neon Glow</span>
+            </div>
+            <div id="paddle-ball-case-display" class="case-display">
+              <div id="paddle-ball-case-face" class="case-face">🎁</div>
+            </div>
+            <div id="paddle-case-item-center" class="case-item case-item-center is-highlighted">
+              <span class="case-item-name">Arc Burst</span>
+            </div>
+            <div id="paddle-case-item-right" class="case-item case-item-right">
+              <span class="case-item-name">Plasma Edge</span>
+            </div>
+          </div>
+          <div id="paddle-ball-case-reveal" class="case-reveal">No skin yet</div>
+        </div>
+        <button id="open-paddle-ball-case" type="button">Open Paddle Case</button>
+        <p id="paddle-ball-case-result" aria-live="polite">Each case is fixed at $50.</p>
       </div>
       <button id="casino-menu" type="button">Main menu</button>
     </section>
