@@ -131,6 +131,7 @@ const TOTAL_LEVELS = 16;
 let respawnsLeft = STARTING_RESPAWNS;
 let gameOver = false;
 let gameWon = false;
+let isPaused = false;
 let currentLevel = 1;
 let levelTransitionTicks = 0;
 let boss = null;
@@ -147,6 +148,15 @@ document.addEventListener("keydown", function (event) {
   if (event.code === "Space") {
     event.preventDefault();
     launchBall();
+  }
+  if (event.key.toLowerCase() === "p" && !event.repeat) {
+    pauseGame();
+  }
+  if (event.key.toLowerCase() === "r" && !event.repeat && activeScreen === "game") {
+    restartGame();
+  }
+  if (event.key.toLowerCase() === "x" && !event.repeat) {
+    shootLaser();
   }
   // Stop the arrow keys from scrolling the page.
   if (event.key.startsWith("Arrow")) {
@@ -165,6 +175,10 @@ document.addEventListener("keyup", function (event) {
 // ------------------------------------------------------------
 function update() {
   if (activeScreen !== "game") {
+    return;
+  }
+
+  if (isPaused) {
     return;
   }
 
@@ -309,6 +323,22 @@ function updateBoss() {
     });
     boss.fireCooldown = 82;
   }
+}
+
+function shootLaser() {
+  if (activeScreen !== "game" || currentLevel !== TOTAL_LEVELS || !boss || isPaused || gameOver || gameWon) {
+    return;
+  }
+
+  bossLasers.push({
+    x: paddle.x + paddle.width / 2 - 4,
+    y: paddle.y - 18,
+    width: 8,
+    height: 18,
+    vx: 0,
+    vy: -5,
+    returned: true
+  });
 }
 
 function updateBossLasers() {
@@ -485,9 +515,16 @@ function draw() {
   drawParticles();
 }
 
+function pauseGame() {
+  if (activeScreen === "game" && !gameOver && !gameWon) {
+    isPaused = !isPaused;
+  }
+}
+
 function restartGame() {
   currentLevel = 1;
   levelTransitionTicks = 0;
+  isPaused = false;
   gameState.reset();
   respawnsLeft = STARTING_RESPAWNS;
   gameOver = false;
@@ -554,6 +591,15 @@ function frame(now) {
 
   if (activeScreen === "game") {
     draw();
+    if (isPaused) {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.font = "40px sans-serif";
+      ctx.fillText("Paused", WIDTH / 2, HEIGHT / 2);
+      ctx.textAlign = "start";
+    }
   }
   requestAnimationFrame(frame);
 }
