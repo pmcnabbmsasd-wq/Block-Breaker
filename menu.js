@@ -1,8 +1,14 @@
 const mainMenu = document.getElementById("main-menu");
+const inventoryScreen = document.getElementById("inventory-screen");
 const gameScreen = document.getElementById("game-screen");
 const casinoScreen = document.getElementById("casino-screen");
 const menuWallet = document.getElementById("menu-wallet");
+const inventoryWallet = document.getElementById("inventory-wallet");
 const casinoWallet = document.getElementById("casino-wallet");
+const inventoryList = document.getElementById("inventory-list");
+const inventoryEmpty = document.getElementById("inventory-empty");
+const openInventoryButton = document.getElementById("open-inventory");
+const inventoryMenuButton = document.getElementById("inventory-menu");
 const wagerInput = document.getElementById("wager");
 const rouletteBet = document.getElementById("roulette-bet");
 const casinoResult = document.getElementById("casino-result");
@@ -11,6 +17,12 @@ const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
 const slotsGame = document.getElementById("slots-game");
 const coinFlipGame = document.getElementById("coin-flip-game");
+const cupBallGame = document.getElementById("cup-ball-game");
+const cupBallStage = document.getElementById("cup-ball-stage");
+const cupBall = document.getElementById("cup-ball");
+const cupButtons = [...document.querySelectorAll("#cup-ball-stage .cup-button")];
+const startCupBallButton = document.getElementById("start-cup-ball");
+const cupBallResult = document.getElementById("cup-ball-result");
 const caseOpeningGame = document.getElementById("case-opening-game");
 const caseDisplay = document.getElementById("case-display");
 const caseFace = document.getElementById("case-face");
@@ -28,6 +40,8 @@ const paddleBallCaseReel = document.getElementById("paddle-ball-case-reel");
 const paddleBallCaseReelTrack = document.getElementById("paddle-ball-case-reel-track");
 const wagerMinimum = 50;
 const quickOpenPaddleCase = document.getElementById("quick-open-paddle-case");
+const PADDLE_SKIN_STORAGE_KEY = "block-breaker-paddle-skins";
+let ownedPaddleSkins = [{ ...defaultPaddleSkin }];
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
 const rouletteSlice = (Math.PI * 2) / 38;
@@ -38,6 +52,10 @@ let dealerHand = [];
 let blackjackWager = 0;
 let blackjackRoundActive = false;
 let coinRotation = 0;
+let cupPositions = [0, 1, 2];
+let ballCupIndex = 0;
+let cupBallWager = 0;
+let cupBallRoundActive = false;
 
 const rouletteColors = [
   "green",
@@ -114,6 +132,7 @@ async function spinWheelToPocket(pocket) {
 function updateWalletDisplay() {
   const balance = "Cash: $" + money;
   menuWallet.textContent = balance;
+  inventoryWallet.textContent = balance;
   casinoWallet.textContent = balance;
 }
 
@@ -255,6 +274,7 @@ function applyPaddleBallSkin(skin) {
     paddleColor: skin.paddleColor,
     ballColor: skin.ballColor
   };
+  persistPaddleBallInventory();
 }
 
 function showCasinoGame(game) {
@@ -262,9 +282,10 @@ function showCasinoGame(game) {
   blackjackGame.hidden = game !== "blackjack";
   slotsGame.hidden = game !== "slots";
   coinFlipGame.hidden = game !== "coin-flip";
+  cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
-  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -275,6 +296,7 @@ function showCasinoGame(game) {
 function showScreen(screenName) {
   activeScreen = screenName;
   mainMenu.hidden = screenName !== "menu";
+  inventoryScreen.hidden = screenName !== "inventory";
   gameScreen.hidden = screenName !== "game";
   casinoScreen.hidden = screenName !== "casino";
   updateWalletDisplay();
@@ -289,6 +311,15 @@ document.getElementById("play-game").addEventListener("click", function () {
 document.getElementById("open-casino").addEventListener("click", function () {
   casinoResult.textContent = "";
   showScreen("casino");
+});
+
+openInventoryButton.addEventListener("click", function () {
+  renderPaddleBallInventory();
+  showScreen("inventory");
+});
+
+inventoryMenuButton.addEventListener("click", function () {
+  showScreen("menu");
 });
 
 document.getElementById("game-menu").addEventListener("click", function () {
@@ -481,6 +512,10 @@ document.getElementById("show-coin-flip").addEventListener("click", function () 
   showCasinoGame("coin-flip");
 });
 
+document.getElementById("show-cup-ball").addEventListener("click", function () {
+  showCasinoGame("cup-ball");
+});
+
 document.getElementById("deal-blackjack").addEventListener("click", function () {
   const validation = validateWager();
   const result = document.getElementById("blackjack-result");
@@ -626,6 +661,84 @@ const paddleBallPrizeTable = [
   { name: "Void Rift", paddleColor: "#9d4edd", ballColor: "#c77dff", price: 180 }
 ];
 
+function persistPaddleBallInventory() {
+  try {
+    localStorage.setItem(PADDLE_SKIN_STORAGE_KEY, JSON.stringify({
+      owned: ownedPaddleSkins.map((skin) => skin.name),
+      equipped: activePaddleSkin.name
+    }));
+  } catch (error) {
+    console.warn("Could not save paddle and ball inventory:", error);
+  }
+}
+
+function restorePaddleBallInventory() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PADDLE_SKIN_STORAGE_KEY) || "null");
+    if (!saved) {
+      return;
+    }
+
+    const ownedNames = new Set(Array.isArray(saved.owned) ? saved.owned : []);
+    ownedPaddleSkins = [
+      { ...defaultPaddleSkin },
+      ...paddleBallPrizeTable
+        .filter((skin) => ownedNames.has(skin.name))
+        .map((skin) => ({ ...skin }))
+    ];
+    const equippedSkin = ownedPaddleSkins.find((skin) => skin.name === saved.equipped);
+    activePaddleSkin = { ...(equippedSkin || defaultPaddleSkin) };
+  } catch (error) {
+    console.warn("Could not restore paddle and ball inventory:", error);
+  }
+}
+
+function renderPaddleBallInventory() {
+  inventoryList.replaceChildren();
+  inventoryEmpty.hidden = ownedPaddleSkins.length > 1;
+
+  for (const skin of ownedPaddleSkins) {
+    const equipped = skin.name === activePaddleSkin.name;
+    const item = document.createElement("article");
+    item.className = "inventory-item";
+    item.setAttribute("role", "listitem");
+    item.setAttribute("aria-current", String(equipped));
+
+    const name = document.createElement("h3");
+    name.textContent = skin.name;
+    item.appendChild(name);
+
+    const colors = document.createElement("div");
+    colors.className = "inventory-colors";
+    for (const [label, color] of [["Paddle", skin.paddleColor], ["Ball", skin.ballColor]]) {
+      const swatchGroup = document.createElement("span");
+      swatchGroup.className = "inventory-swatch-group";
+      const swatch = document.createElement("span");
+      swatch.className = "inventory-swatch";
+      swatch.style.backgroundColor = color;
+      swatch.setAttribute("aria-hidden", "true");
+      const swatchLabel = document.createElement("span");
+      swatchLabel.textContent = label;
+      swatchGroup.append(swatch, swatchLabel);
+      colors.appendChild(swatchGroup);
+    }
+    item.appendChild(colors);
+
+    const equipButton = document.createElement("button");
+    equipButton.type = "button";
+    equipButton.disabled = equipped;
+    equipButton.textContent = equipped ? "Equipped" : "Equip";
+    equipButton.addEventListener("click", function () {
+      applyPaddleBallSkin(skin);
+      renderPaddleBallInventory();
+    });
+    item.appendChild(equipButton);
+    inventoryList.appendChild(item);
+  }
+}
+
+restorePaddleBallInventory();
+
 openPaddleBallCaseButton.addEventListener("click", async function () {
   const caseCost = 50;
   if (money < caseCost) {
@@ -644,6 +757,9 @@ openPaddleBallCaseButton.addEventListener("click", async function () {
   const prize = paddleBallPrizeTable[Math.floor(Math.random() * paddleBallPrizeTable.length)];
   try {
     await spinCaseReel(paddleBallPrizeTable, prize, paddleBallCaseReel, paddleBallCaseReelTrack, paddleBallCaseDisplay, paddleBallCaseFace, quickOpenPaddleCase.checked);
+    if (!ownedPaddleSkins.some((skin) => skin.name === prize.name)) {
+      ownedPaddleSkins.push({ ...prize });
+    }
     applyPaddleBallSkin(prize);
     document.getElementById("paddle-ball-case-reveal").textContent = prize.name + " — applied to paddle and ball";
     paddleBallCaseResult.textContent = "You unlocked " + prize.name + ".";
@@ -701,6 +817,152 @@ coinButton.addEventListener("click", async function () {
     coinButton.disabled = false;
     updateWalletDisplay();
   }
+});
+
+function cupSlotCenter(slot) {
+  return (slot + 0.5) * cupBallStage.clientWidth / 3;
+}
+
+async function swapCups(firstCup, secondCup) {
+  const firstStart = cupSlotCenter(cupPositions[firstCup]);
+  const secondStart = cupSlotCenter(cupPositions[secondCup]);
+  const midpoint = (firstStart + secondStart) / 2;
+  const duration = 390;
+  const firstAnimation = cupButtons[firstCup].animate(
+    [
+      { left: firstStart + "px", top: "58px" },
+      { left: midpoint + "px", top: "18px" },
+      { left: secondStart + "px", top: "58px" }
+    ],
+    { duration, easing: "ease-in-out", fill: "forwards" }
+  );
+  const secondAnimation = cupButtons[secondCup].animate(
+    [
+      { left: secondStart + "px", top: "58px" },
+      { left: midpoint + "px", top: "86px" },
+      { left: firstStart + "px", top: "58px" }
+    ],
+    { duration, easing: "ease-in-out", fill: "forwards" }
+  );
+
+  await Promise.all([firstAnimation.finished, secondAnimation.finished]);
+  const firstPosition = cupPositions[firstCup];
+  cupPositions[firstCup] = cupPositions[secondCup];
+  cupPositions[secondCup] = firstPosition;
+  cupButtons[firstCup].style.left = secondStart + "px";
+  cupButtons[secondCup].style.left = firstStart + "px";
+  cupButtons[firstCup].style.top = "58px";
+  cupButtons[secondCup].style.top = "58px";
+  firstAnimation.cancel();
+  secondAnimation.cancel();
+}
+
+async function revealCupBallChoice(selectedCup) {
+  if (!cupBallRoundActive) {
+    return;
+  }
+
+  cupBallRoundActive = false;
+  cupButtons.forEach((cup) => { cup.disabled = true; });
+  const revealAnimations = cupButtons.map((cup) => {
+    const animation = cup.animate(
+      [{ top: "58px" }, { top: "20px" }],
+      { duration: 350, easing: "ease-out", fill: "forwards" }
+    );
+    return animation.finished.then(() => {
+      cup.style.top = "20px";
+      animation.cancel();
+    });
+  });
+  await Promise.all(revealAnimations);
+
+  cupBall.style.left = cupSlotCenter(cupPositions[ballCupIndex]) + "px";
+  cupBall.style.top = "124px";
+  cupBall.style.visibility = "visible";
+  if (selectedCup === ballCupIndex) {
+    const winnings = cupBallWager * 2;
+    money += cupBallWager + winnings;
+    cupBallResult.textContent = "You found the ball under Cup " + (selectedCup + 1) + "! You won $" + winnings + ".";
+  } else {
+    cupBallResult.textContent = "The ball was under Cup " + (ballCupIndex + 1) + ". You lost $" + cupBallWager + ".";
+  }
+  updateWalletDisplay();
+  startCupBallButton.disabled = false;
+}
+
+cupButtons.forEach((cup, index) => {
+  cup.addEventListener("click", function () {
+    revealCupBallChoice(index);
+  });
+});
+
+startCupBallButton.addEventListener("click", async function () {
+  const validation = validateWager();
+  if (validation.error) {
+    cupBallResult.textContent = validation.error;
+    return;
+  }
+
+  cupBallRoundActive = false;
+  cupBallWager = validation.wager;
+  money -= cupBallWager;
+  updateWalletDisplay();
+  startCupBallButton.disabled = true;
+  cupButtons.forEach((cup, index) => {
+    cup.disabled = true;
+    cup.style.left = cupSlotCenter(index) + "px";
+    cup.style.top = "40px";
+  });
+  cupPositions = [0, 1, 2];
+  ballCupIndex = Math.floor(Math.random() * cupButtons.length);
+  cupBall.style.visibility = "visible";
+  cupBall.style.left = cupBallStage.clientWidth / 2 + "px";
+  cupBall.style.top = "164px";
+  cupBallResult.textContent = "Watch the ball, then follow the cups...";
+
+  const ballDestination = cupSlotCenter(ballCupIndex);
+  const ballAnimation = cupBall.animate(
+    [
+      { left: cupBallStage.clientWidth / 2 + "px", top: "164px" },
+      { left: (cupBallStage.clientWidth / 2 + ballDestination) / 2 + "px", top: "137px", offset: 0.55 },
+      { left: ballDestination + "px", top: "124px" }
+    ],
+    { duration: 720, easing: "ease-in-out", fill: "forwards" }
+  );
+  await ballAnimation.finished;
+  cupBall.style.left = ballDestination + "px";
+  cupBall.style.top = "124px";
+  ballAnimation.cancel();
+
+  const coverAnimation = cupButtons[ballCupIndex].animate(
+    [{ top: "40px" }, { top: "58px" }],
+    { duration: 250, easing: "ease-in", fill: "forwards" }
+  );
+  await coverAnimation.finished;
+  cupButtons[ballCupIndex].style.top = "58px";
+  coverAnimation.cancel();
+  cupBall.style.visibility = "hidden";
+
+  await Promise.all(cupButtons.map((cup) => {
+    const animation = cup.animate(
+      [{ top: cup.style.top || "40px" }, { top: "58px" }],
+      { duration: 180, easing: "ease-in", fill: "forwards" }
+    );
+    return animation.finished.then(() => {
+      cup.style.top = "58px";
+      animation.cancel();
+    });
+  }));
+
+  for (let swap = 0; swap < 7; swap++) {
+    const firstCup = Math.floor(Math.random() * cupButtons.length);
+    const secondCup = (firstCup + 1 + Math.floor(Math.random() * (cupButtons.length - 1))) % cupButtons.length;
+    await swapCups(firstCup, secondCup);
+  }
+
+  cupBallRoundActive = true;
+  cupButtons.forEach((cup) => { cup.disabled = false; });
+  cupBallResult.textContent = "Pick the cup hiding the ball.";
 });
 
 drawRouletteWheel();

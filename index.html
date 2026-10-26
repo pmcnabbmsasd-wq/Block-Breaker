@@ -14,6 +14,7 @@
       <div class="menu-actions">
         <button id="play-game" type="button">Play Block Breaker</button>
         <button id="open-casino" type="button">Casino</button>
+        <button id="open-inventory" type="button">Inventory</button>
       </div>
       <section class="settings" aria-labelledby="settings-title">
         <h2 id="settings-title">Settings</h2>
@@ -25,6 +26,15 @@
         <p id="music-status" aria-live="polite">The beat includes playful spoken lyrics.</p>
         <p id="lyric-caption" lang="zh-Hans" aria-live="polite"></p>
       </section>
+    </section>
+
+    <section id="inventory-screen" hidden aria-labelledby="inventory-title">
+      <h1 id="inventory-title">Inventory</h1>
+      <p id="inventory-wallet" aria-live="polite">Cash: $0</p>
+      <h2>Paddle &amp; Ball Skins</h2>
+      <div id="inventory-list" class="inventory-grid" role="list" aria-label="Owned paddle and ball skins"></div>
+      <p id="inventory-empty">Open a Paddle &amp; Ball Case to unlock more skins.</p>
+      <button id="inventory-menu" type="button">Main menu</button>
     </section>
 
     <section id="game-screen" hidden aria-label="Block Breaker game">
@@ -41,6 +51,7 @@
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
+        <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
         <button id="show-case-opening" type="button" aria-pressed="false">Case Opening</button>
         <button id="show-paddle-ball-case" type="button" aria-pressed="false">Paddle & Ball Case</button>
       </div>
@@ -105,6 +116,26 @@
         </div>
         <button id="flip-coin" type="button">Flip coin</button>
         <p id="coin-result" aria-live="polite">Place your bet and flip to play.</p>
+      </div>
+      <div id="cup-ball-game" hidden>
+        <p>Follow the ball as it goes under a cup. Find it after the cups shuffle to win 2:1.</p>
+        <div id="cup-ball-stage" class="cup-ball-stage" role="group" aria-label="Three red cups">
+          <div id="cup-ball" class="cup-ball" aria-hidden="true"></div>
+          <button class="cup-button" type="button" data-cup="0" aria-label="Cup 1" disabled>
+            <span class="cup-shell" aria-hidden="true"></span>
+            <span class="cup-number" aria-hidden="true">1</span>
+          </button>
+          <button class="cup-button" type="button" data-cup="1" aria-label="Cup 2" disabled>
+            <span class="cup-shell" aria-hidden="true"></span>
+            <span class="cup-number" aria-hidden="true">2</span>
+          </button>
+          <button class="cup-button" type="button" data-cup="2" aria-label="Cup 3" disabled>
+            <span class="cup-shell" aria-hidden="true"></span>
+            <span class="cup-number" aria-hidden="true">3</span>
+          </button>
+        </div>
+        <button id="start-cup-ball" type="button">Start round</button>
+        <p id="cup-ball-result" aria-live="polite">Place your wager and start a round.</p>
       </div>
       <div id="case-opening-game" hidden>
         <p>Open a CS:GO-style case and reveal a random weapon skin.</p>
