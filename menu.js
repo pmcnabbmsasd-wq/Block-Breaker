@@ -14,20 +14,20 @@ const coinFlipGame = document.getElementById("coin-flip-game");
 const caseOpeningGame = document.getElementById("case-opening-game");
 const caseDisplay = document.getElementById("case-display");
 const caseFace = document.getElementById("case-face");
-const caseItemLeft = document.getElementById("case-item-left");
-const caseItemCenter = document.getElementById("case-item-center");
-const caseItemRight = document.getElementById("case-item-right");
+const caseReel = document.getElementById("case-reel");
+const caseReelTrack = document.getElementById("case-reel-track");
 const caseOpeningResult = document.getElementById("case-opening-result");
 const openCaseButton = document.getElementById("open-case");
+const quickOpenCase = document.getElementById("quick-open-case");
 const paddleBallCaseGame = document.getElementById("paddle-ball-case-game");
 const paddleBallCaseDisplay = document.getElementById("paddle-ball-case-display");
 const paddleBallCaseFace = document.getElementById("paddle-ball-case-face");
 const paddleBallCaseResult = document.getElementById("paddle-ball-case-result");
 const openPaddleBallCaseButton = document.getElementById("open-paddle-ball-case");
-const paddleCaseItemLeft = document.getElementById("paddle-case-item-left");
-const paddleCaseItemCenter = document.getElementById("paddle-case-item-center");
-const paddleCaseItemRight = document.getElementById("paddle-case-item-right");
+const paddleBallCaseReel = document.getElementById("paddle-ball-case-reel");
+const paddleBallCaseReelTrack = document.getElementById("paddle-ball-case-reel-track");
 const wagerMinimum = 50;
+const quickOpenPaddleCase = document.getElementById("quick-open-paddle-case");
 const rouletteWheel = document.getElementById("roulette-wheel");
 const rouletteContext = rouletteWheel.getContext("2d");
 const rouletteSlice = (Math.PI * 2) / 38;
@@ -128,68 +128,124 @@ function validateWager() {
   return { wager };
 }
 
-function playCaseSpinSound() {
+let caseTickAudioContext;
+
+function getCaseTickAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) {
+    return null;
+  }
+  if (!caseTickAudioContext) {
+    caseTickAudioContext = new AudioContextClass();
+  }
+  if (caseTickAudioContext.state === "suspended") {
+    caseTickAudioContext.resume().catch(() => {});
+  }
+  return caseTickAudioContext;
+}
+
+function playCaseTick(audioContext) {
+  if (!audioContext) {
     return;
   }
 
-  const audioContext = new AudioContextClass();
-  const master = audioContext.createGain();
-  master.gain.value = 0.08;
-  master.connect(audioContext.destination);
-
+  const now = audioContext.currentTime;
   const oscillator = audioContext.createOscillator();
-  const filter = audioContext.createBiquadFilter();
-  const tremolo = audioContext.createOscillator();
-  const tremoloGain = audioContext.createGain();
-
-  oscillator.type = "sawtooth";
-  oscillator.frequency.setValueAtTime(180, audioContext.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(960, audioContext.currentTime + 0.9);
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(2600, audioContext.currentTime);
-  filter.Q.value = 2;
-
-  tremolo.type = "triangle";
-  tremolo.frequency.value = 8;
-  tremoloGain.gain.value = 75;
-
-  oscillator.connect(filter);
-  filter.connect(master);
-  tremolo.connect(tremoloGain);
-  tremoloGain.connect(oscillator.frequency);
-
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + 1.1);
-  tremolo.start();
-  tremolo.stop(audioContext.currentTime + 1.1);
-
-  setTimeout(function () {
-    audioContext.close();
-  }, 1200);
+  const envelope = audioContext.createGain();
+  oscillator.type = "triangle";
+  oscillator.frequency.setValueAtTime(1900, now);
+  oscillator.frequency.exponentialRampToValueAtTime(720, now + 0.045);
+  envelope.gain.setValueAtTime(0.18, now);
+  envelope.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+  oscillator.connect(envelope);
+  envelope.connect(audioContext.destination);
+  oscillator.start(now);
+  oscillator.stop(now + 0.055);
 }
 
-function renderCaseShowcase(prize, leftEl, centerEl, rightEl, displayEl, faceEl) {
-  const previewItems = [
-    { name: "USP-S | Dark Water", color: "#8ec5ff", rarity: "common" },
-    { name: "M4A1-S | Knight", color: "#ec4899", rarity: "rare" },
-    { name: "AK-47 | Redline", color: "#f97316", rarity: "epic" }
-  ];
-  const chosenIndex = 1;
-  previewItems[chosenIndex] = { name: prize.name, color: prize.color, rarity: "legendary" };
+function shuffleCaseItems(items) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+}
 
-  const cards = [leftEl, centerEl, rightEl];
-  cards.forEach((card, index) => {
-    const item = previewItems[index];
-    card.style.setProperty("--item-color", item.color);
-    card.classList.toggle("is-highlighted", index === chosenIndex);
-    card.querySelector(".case-item-name").textContent = item.name;
-    card.dataset.rarity = item.rarity;
-  });
+function createCaseItemCard(item) {
+  const card = document.createElement("div");
+  card.className = "case-item";
+  card.style.setProperty("--item-color", item.color || item.paddleColor);
+  card.dataset.rarity = item.rarity || "skin";
 
-  displayEl.style.setProperty("--case-glow", prize.color);
+  const name = document.createElement("span");
+  name.className = "case-item-name";
+  name.textContent = item.name;
+  card.appendChild(name);
+  return card;
+}
+
+async function spinCaseReel(prizeTable, prize, reel, track, displayEl, faceEl, quickOpen = false) {
+  const tickAudioContext = quickOpen ? null : getCaseTickAudioContext();
+  const reelItems = [];
+  if (quickOpen) {
+    reelItems.push(prize);
+  } else {
+    for (let pass = 0; pass < 4; pass++) {
+      reelItems.push(...shuffleCaseItems(prizeTable));
+    }
+    reelItems.push(prize);
+  }
+
+  const sidePadding = reel.clientWidth / 2 - 54;
+  track.style.paddingLeft = sidePadding + "px";
+  track.style.paddingRight = sidePadding + "px";
+  track.style.transform = "translateX(0px)";
+  track.replaceChildren(...reelItems.map(createCaseItemCard));
+
+  const cards = [...track.children];
+  const targetCard = cards[cards.length - 1];
+  const targetOffset = reel.clientWidth / 2 - targetCard.offsetLeft - targetCard.offsetWidth / 2;
+  if (quickOpen) {
+    targetCard.classList.add("is-highlighted");
+    displayEl.style.setProperty("--case-glow", prize.color || prize.paddleColor);
+    displayEl.classList.remove("spinning", "revealed");
+    faceEl.textContent = "OPENED";
+    return;
+  }
+
+  const animation = track.animate(
+    [
+      { transform: "translateX(0px)" },
+      { transform: "translateX(" + targetOffset + "px)" }
+    ],
+    { duration: 6800, easing: "cubic-bezier(0.08, 0.62, 0.04, 1)", fill: "forwards" }
+  );
+
+  let nextCardToTick = 1;
+  function tickCardsCrossingMarker() {
+    const markerX = reel.getBoundingClientRect().left + reel.clientWidth / 2;
+    while (
+      nextCardToTick < cards.length &&
+      cards[nextCardToTick].getBoundingClientRect().left + cards[nextCardToTick].offsetWidth / 2 <= markerX
+    ) {
+      playCaseTick(tickAudioContext);
+      nextCardToTick++;
+    }
+    if (nextCardToTick < cards.length) {
+      requestAnimationFrame(tickCardsCrossingMarker);
+    }
+  }
+  requestAnimationFrame(tickCardsCrossingMarker);
+
+  await animation.finished;
+  tickCardsCrossingMarker();
+  track.style.transform = "translateX(" + targetOffset + "px)";
+  animation.cancel();
+  targetCard.classList.add("is-highlighted");
+  displayEl.style.setProperty("--case-glow", prize.color || prize.paddleColor);
+  displayEl.classList.remove("spinning");
+  displayEl.classList.add("revealed");
   faceEl.textContent = "OPENED";
 }
 
@@ -532,7 +588,7 @@ slotsButton.addEventListener("click", async function () {
   }
 });
 
-openCaseButton.addEventListener("click", function () {
+openCaseButton.addEventListener("click", async function () {
   const caseCost = 50;
   if (money < caseCost) {
     caseOpeningResult.textContent = "You cannot afford to open this case.";
@@ -549,20 +605,17 @@ openCaseButton.addEventListener("click", function () {
   document.getElementById("case-reveal").textContent = "Opening...";
   caseOpeningResult.textContent = "Opening the case...";
   openCaseButton.disabled = true;
-  playCaseSpinSound();
-
-  setTimeout(function () {
-    const weightedItems = casePrizeTable.flatMap((item) => Array(item.weight).fill(item));
-    const prize = weightedItems[Math.floor(Math.random() * weightedItems.length)];
+  const weightedItems = casePrizeTable.flatMap((item) => Array(item.weight).fill(item));
+  const prize = weightedItems[Math.floor(Math.random() * weightedItems.length)];
+  try {
+    await spinCaseReel(casePrizeTable, prize, caseReel, caseReelTrack, caseDisplay, caseFace, quickOpenCase.checked);
     money += prize.value;
-    renderCaseShowcase(prize, caseItemLeft, caseItemCenter, caseItemRight, caseDisplay, caseFace);
-    caseDisplay.classList.remove("spinning");
-    caseDisplay.classList.add("revealed");
     document.getElementById("case-reveal").textContent = prize.name + " — $" + prize.value;
     caseOpeningResult.textContent = "You opened " + prize.name + " for $" + prize.value + ".";
     updateWalletDisplay();
+  } finally {
     openCaseButton.disabled = false;
-  }, 1400);
+  }
 });
 
 const paddleBallPrizeTable = [
@@ -573,7 +626,7 @@ const paddleBallPrizeTable = [
   { name: "Void Rift", paddleColor: "#9d4edd", ballColor: "#c77dff", price: 180 }
 ];
 
-openPaddleBallCaseButton.addEventListener("click", function () {
+openPaddleBallCaseButton.addEventListener("click", async function () {
   const caseCost = 50;
   if (money < caseCost) {
     paddleBallCaseResult.textContent = "You cannot afford to open this case.";
@@ -588,19 +641,16 @@ openPaddleBallCaseButton.addEventListener("click", function () {
   paddleBallCaseResult.textContent = "Opening your paddle and ball case...";
   document.getElementById("paddle-ball-case-reveal").textContent = "Opening...";
   openPaddleBallCaseButton.disabled = true;
-  playCaseSpinSound();
-
-  setTimeout(function () {
-    const prize = paddleBallPrizeTable[Math.floor(Math.random() * paddleBallPrizeTable.length)];
+  const prize = paddleBallPrizeTable[Math.floor(Math.random() * paddleBallPrizeTable.length)];
+  try {
+    await spinCaseReel(paddleBallPrizeTable, prize, paddleBallCaseReel, paddleBallCaseReelTrack, paddleBallCaseDisplay, paddleBallCaseFace, quickOpenPaddleCase.checked);
     applyPaddleBallSkin(prize);
-    renderCaseShowcase(prize, document.getElementById("paddle-case-item-left"), document.getElementById("paddle-case-item-center"), document.getElementById("paddle-case-item-right"), paddleBallCaseDisplay, paddleBallCaseFace);
-    paddleBallCaseDisplay.classList.remove("spinning");
-    paddleBallCaseDisplay.classList.add("revealed");
     document.getElementById("paddle-ball-case-reveal").textContent = prize.name + " — applied to paddle and ball";
     paddleBallCaseResult.textContent = "You unlocked " + prize.name + ".";
     updateWalletDisplay();
+  } finally {
     openPaddleBallCaseButton.disabled = false;
-  }, 1400);
+  }
 });
 
 const coin = document.getElementById("coin");

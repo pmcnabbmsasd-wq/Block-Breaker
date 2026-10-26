@@ -114,20 +114,17 @@
             <div id="case-display" class="case-display">
               <div id="case-face" class="case-face">SECURE CASE</div>
             </div>
-            <div class="case-item-grid" aria-live="polite">
-              <div id="case-item-left" class="case-item case-item-left">
-                <span class="case-item-name">USP-S</span>
-              </div>
-              <div id="case-item-center" class="case-item case-item-center is-highlighted">
-                <span class="case-item-name">M4A1-S</span>
-              </div>
-              <div id="case-item-right" class="case-item case-item-right">
-                <span class="case-item-name">AK-47</span>
-              </div>
+            <div id="case-reel" class="case-reel" aria-label="Available weapon skins">
+              <div class="case-reel-marker" aria-hidden="true"></div>
+              <div id="case-reel-track" class="case-reel-track" aria-hidden="true"></div>
             </div>
           </div>
           <div id="case-reveal" class="case-reveal">No item yet</div>
         </div>
+        <label class="quick-open-option" for="quick-open-case">
+          <input id="quick-open-case" type="checkbox">
+          Quick open (skip animation)
+        </label>
         <button id="open-case" type="button">Open Case</button>
         <p id="case-opening-result" aria-live="polite">Use your wager to open a case.</p>
       </div>
@@ -139,20 +136,17 @@
             <div id="paddle-ball-case-display" class="case-display">
               <div id="paddle-ball-case-face" class="case-face">SECURE CASE</div>
             </div>
-            <div class="case-item-grid" aria-live="polite">
-              <div id="paddle-case-item-left" class="case-item case-item-left">
-                <span class="case-item-name">Neon Glow</span>
-              </div>
-              <div id="paddle-case-item-center" class="case-item case-item-center is-highlighted">
-                <span class="case-item-name">Arc Burst</span>
-              </div>
-              <div id="paddle-case-item-right" class="case-item case-item-right">
-                <span class="case-item-name">Plasma Edge</span>
-              </div>
+            <div id="paddle-ball-case-reel" class="case-reel" aria-label="Available paddle and ball skins">
+              <div class="case-reel-marker" aria-hidden="true"></div>
+              <div id="paddle-ball-case-reel-track" class="case-reel-track" aria-hidden="true"></div>
             </div>
           </div>
           <div id="paddle-ball-case-reveal" class="case-reveal">No skin yet</div>
         </div>
+        <label class="quick-open-option" for="quick-open-paddle-case">
+          <input id="quick-open-paddle-case" type="checkbox">
+          Quick open (skip animation)
+        </label>
         <button id="open-paddle-ball-case" type="button">Open Paddle Case</button>
         <p id="paddle-ball-case-result" aria-live="polite">Each case is fixed at $50.</p>
       </div>
