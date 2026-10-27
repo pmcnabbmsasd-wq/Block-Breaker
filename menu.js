@@ -457,6 +457,26 @@ function renderBlackjackHands(revealDealer = false) {
     : "Total: hidden";
 }
 
+function animateDealerCard(cardElement, reveal = false) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return Promise.resolve();
+  }
+
+  const keyframes = reveal
+    ? [
+        { transform: "perspective(500px) rotateY(90deg)", opacity: 0.5 },
+        { transform: "perspective(500px) rotateY(0deg)", opacity: 1 }
+      ]
+    : [
+        { transform: "translateY(-24px) rotate(-8deg) scale(0.9)", opacity: 0 },
+        { transform: "translateY(0) rotate(0) scale(1)", opacity: 1 }
+      ];
+  return cardElement.animate(keyframes, {
+    duration: 380,
+    easing: "cubic-bezier(0.2, 0.8, 0.2, 1)"
+  }).finished;
+}
+
 function finishBlackjackRound(outcome) {
   blackjackRoundActive = false;
   renderBlackjackHands(true);
@@ -480,9 +500,23 @@ function finishBlackjackRound(outcome) {
   updateWalletDisplay();
 }
 
-function dealerTurn() {
+async function dealerTurn() {
+  const hitButton = document.getElementById("hit-blackjack");
+  const standButton = document.getElementById("stand-blackjack");
+  hitButton.disabled = true;
+  standButton.disabled = true;
+
+  renderBlackjackHands(true);
+  const dealerCards = [...document.getElementById("dealer-hand").children];
+  await Promise.all(dealerCards.map((card, index) =>
+    new Promise((resolve) => setTimeout(resolve, index * 100)).then(() => animateDealerCard(card, true))
+  ));
+
   while (handValue(dealerHand) < 16) {
     dealerHand.push(drawCard());
+    renderBlackjackHands(true);
+    const newCard = document.getElementById("dealer-hand").lastElementChild;
+    await animateDealerCard(newCard);
   }
   const playerTotal = handValue(playerHand);
   const dealerTotal = handValue(dealerHand);
