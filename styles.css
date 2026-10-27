@@ -543,17 +543,6 @@ button:focus-visible {
   content: "";
 }
 
-.cup-number {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  color: #ffe7b1;
-  font-size: 12px;
-  font-weight: bold;
-  text-shadow: 0 1px 3px #000;
-}
-
 .cup-ball {
   position: absolute;
   z-index: 1;

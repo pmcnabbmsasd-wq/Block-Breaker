@@ -827,7 +827,7 @@ async function swapCups(firstCup, secondCup) {
   const firstStart = cupSlotCenter(cupPositions[firstCup]);
   const secondStart = cupSlotCenter(cupPositions[secondCup]);
   const midpoint = (firstStart + secondStart) / 2;
-  const duration = 390;
+  const duration = 340;
   const firstAnimation = cupButtons[firstCup].animate(
     [
       { left: firstStart + "px", top: "58px" },
@@ -954,7 +954,7 @@ startCupBallButton.addEventListener("click", async function () {
     });
   }));
 
-  for (let swap = 0; swap < 7; swap++) {
+  for (let swap = 0; swap < 12; swap++) {
     const firstCup = Math.floor(Math.random() * cupButtons.length);
     const secondCup = (firstCup + 1 + Math.floor(Math.random() * (cupButtons.length - 1))) % cupButtons.length;
     await swapCups(firstCup, secondCup);
