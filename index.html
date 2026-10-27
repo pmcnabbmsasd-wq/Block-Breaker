@@ -49,6 +49,7 @@
       <div class="casino-games" aria-label="Casino games">
         <button id="show-roulette" type="button" aria-pressed="false">Roulette</button>
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
+        <button id="show-poker" type="button" aria-pressed="false">Poker</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
@@ -90,6 +91,45 @@
         <button id="hit-blackjack" type="button" disabled>Hit</button>
         <button id="stand-blackjack" type="button" disabled>Stand</button>
         <p id="blackjack-result" aria-live="polite">Place your bet and deal to start.</p>
+      </div>
+      <div id="poker-game" hidden>
+        <p>Texas Hold'em against three computer players. Your wager is your buy-in for the hand.</p>
+        <div class="poker-table" role="group" aria-label="Texas Hold'em table">
+          <div class="poker-opponents">
+            <section class="poker-seat" data-poker-seat="1" aria-label="Player 1">
+              <div class="poker-seat-heading"><strong id="poker-name-1">Maya</strong><span id="poker-status-1">Waiting</span></div>
+              <div class="poker-hole-cards" id="poker-cards-1" aria-label="Maya's cards"></div>
+              <p class="poker-stack" id="poker-stack-1">Stack: --</p>
+            </section>
+            <section class="poker-seat" data-poker-seat="2" aria-label="Player 2">
+              <div class="poker-seat-heading"><strong id="poker-name-2">Leo</strong><span id="poker-status-2">Waiting</span></div>
+              <div class="poker-hole-cards" id="poker-cards-2" aria-label="Leo's cards"></div>
+              <p class="poker-stack" id="poker-stack-2">Stack: --</p>
+            </section>
+            <section class="poker-seat" data-poker-seat="3" aria-label="Player 3">
+              <div class="poker-seat-heading"><strong id="poker-name-3">Sam</strong><span id="poker-status-3">Waiting</span></div>
+              <div class="poker-hole-cards" id="poker-cards-3" aria-label="Sam's cards"></div>
+              <p class="poker-stack" id="poker-stack-3">Stack: --</p>
+            </section>
+          </div>
+          <div class="poker-community">
+            <p id="poker-pot">Pot: $0</p>
+            <div class="poker-board-cards" id="poker-board-cards" aria-label="Community cards"></div>
+            <p id="poker-street">Waiting for a hand</p>
+          </div>
+          <section class="poker-seat poker-human" data-poker-seat="0" aria-label="Your hand">
+            <div class="poker-seat-heading"><strong>You</strong><span id="poker-status-0">Waiting</span></div>
+            <div class="poker-hole-cards" id="poker-cards-0" aria-label="Your cards"></div>
+            <p class="poker-stack" id="poker-stack-0">Stack: --</p>
+          </section>
+        </div>
+        <div class="poker-actions" aria-label="Poker actions">
+          <button id="poker-fold" type="button" disabled>Fold</button>
+          <button id="poker-check-call" type="button" disabled>Check</button>
+          <button id="poker-raise" type="button" disabled>Bet</button>
+        </div>
+        <button id="poker-start" type="button">Deal hand</button>
+        <p id="poker-result" aria-live="polite">Choose your buy-in above to join the table.</p>
       </div>
       <div id="slots-game">
         <p>Spin three reels. Three matching symbols pay 5× your bet; two matching symbols pay 2×.</p>

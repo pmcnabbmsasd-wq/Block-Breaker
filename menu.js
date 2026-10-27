@@ -15,6 +15,7 @@ const casinoResult = document.getElementById("casino-result");
 const spinButton = document.getElementById("spin-roulette");
 const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
+const pokerGame = document.getElementById("poker-game");
 const slotsGame = document.getElementById("slots-game");
 const coinFlipGame = document.getElementById("coin-flip-game");
 const cupBallGame = document.getElementById("cup-ball-game");
@@ -280,12 +281,14 @@ function applyPaddleBallSkin(skin) {
 function showCasinoGame(game) {
   rouletteGame.hidden = game !== "roulette";
   blackjackGame.hidden = game !== "blackjack";
+  pokerGame.hidden = game !== "poker";
   slotsGame.hidden = game !== "slots";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
-  for (const name of ["roulette", "blackjack", "slots", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  casinoScreen.classList.toggle("poker-active", game === "poker");
+  for (const name of ["roulette", "blackjack", "poker", "slots", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -536,6 +539,10 @@ document.getElementById("show-roulette").addEventListener("click", function () {
 
 document.getElementById("show-blackjack").addEventListener("click", function () {
   showCasinoGame("blackjack");
+});
+
+document.getElementById("show-poker").addEventListener("click", function () {
+  showCasinoGame("poker");
 });
 
 document.getElementById("show-slots").addEventListener("click", function () {
