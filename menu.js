@@ -20,6 +20,7 @@ const slotsGame = document.getElementById("slots-game");
 const plinkoGame = document.getElementById("plinko-game");
 const plinkoBoard = document.getElementById("plinko-board");
 const plinkoContext = plinkoBoard.getContext("2d");
+const plinkoBallCountInput = document.getElementById("plinko-ball-count");
 const dropPlinkoButton = document.getElementById("drop-plinko");
 const plinkoResult = document.getElementById("plinko-result");
 const crashGame = document.getElementById("crash-game");
@@ -178,7 +179,7 @@ function plinkoMultiplierColor(multiplier) {
   return "#d3d8df";
 }
 
-function drawPlinkoBoard(ball = null, highlightedBucket = -1) {
+function drawPlinkoBoard(balls = [], highlightedBuckets = []) {
   const width = plinkoBoard.width;
   const height = plinkoBoard.height;
   plinkoContext.clearRect(0, 0, width, height);
@@ -202,19 +203,20 @@ function drawPlinkoBoard(ball = null, highlightedBucket = -1) {
     const center = plinkoBucketCenter(index);
     const multiplier = plinkoMultipliers[index];
     const color = plinkoMultiplierColor(multiplier);
-    plinkoContext.fillStyle = index === highlightedBucket ? color : color + "33";
+    const highlighted = highlightedBuckets.includes(index);
+    plinkoContext.fillStyle = highlighted ? color : color + "33";
     plinkoContext.fillRect(center - bucketWidth / 2, bucketTop, bucketWidth, 54);
     plinkoContext.strokeStyle = color;
     plinkoContext.lineWidth = 1;
     plinkoContext.strokeRect(center - bucketWidth / 2, bucketTop, bucketWidth, 54);
-    plinkoContext.fillStyle = index === highlightedBucket ? "#111" : color;
+    plinkoContext.fillStyle = highlighted ? "#111" : color;
     plinkoContext.font = "bold 10px sans-serif";
     plinkoContext.textAlign = "center";
     plinkoContext.textBaseline = "middle";
     plinkoContext.fillText(multiplier + "x", center, bucketTop + 28);
   }
 
-  if (ball) {
+  for (const ball of balls) {
     const ballGradient = plinkoContext.createRadialGradient(ball.x - 2, ball.y - 3, 1, ball.x, ball.y, 8);
     ballGradient.addColorStop(0, "#fff8d8");
     ballGradient.addColorStop(1, "#ff9f43");
@@ -231,8 +233,9 @@ function drawPlinkoBoard(ball = null, highlightedBucket = -1) {
 function createPlinkoDropPath() {
   const path = [{ x: plinkoBoard.width / 2, y: 22 }, plinkoPegPosition(0, 0)];
   let bucketIndex = 0;
+  const rightChance = Math.random() < 0.5 ? 0.45 : 0.55;
   for (let row = 0; row < plinkoRows; row++) {
-    bucketIndex += Math.random() < 0.5 ? 0 : 1;
+    bucketIndex += Math.random() < rightChance ? 1 : 0;
     if (row < plinkoRows - 1) {
       path.push(plinkoPegPosition(row + 1, bucketIndex));
     } else {
@@ -242,27 +245,38 @@ function createPlinkoDropPath() {
   return { path, bucketIndex };
 }
 
-function animatePlinkoDrop(path, bucketIndex) {
+function animatePlinkoDrops(drops) {
   return new Promise((resolve) => {
     const startTime = performance.now();
-    const segmentCount = path.length - 1;
+    const segmentCount = drops[0].path.length - 1;
     const duration = segmentCount * 145;
+    const stagger = 90;
 
     function animateFrame(now) {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const segmentProgress = progress * segmentCount;
-      const segment = Math.min(Math.floor(segmentProgress), segmentCount - 1);
-      const fraction = progress === 1 ? 1 : segmentProgress - segment;
-      const eased = fraction * fraction * (3 - 2 * fraction);
-      const start = path[segment];
-      const end = path[segment + 1];
-      drawPlinkoBoard({
-        x: start.x + (end.x - start.x) * eased,
-        y: start.y + (end.y - start.y) * eased
-      });
+      let allFinished = true;
+      const balls = [];
+      for (let index = 0; index < drops.length; index++) {
+        const elapsed = now - startTime - index * stagger;
+        if (elapsed < 0) {
+          allFinished = false;
+          continue;
+        }
+        const progress = Math.min(elapsed / duration, 1);
+        const segmentProgress = progress * segmentCount;
+        const segment = Math.min(Math.floor(segmentProgress), segmentCount - 1);
+        const fraction = progress === 1 ? 1 : segmentProgress - segment;
+        const eased = fraction * fraction * (3 - 2 * fraction);
+        const start = drops[index].path[segment];
+        const end = drops[index].path[segment + 1];
+        balls.push({
+          x: start.x + (end.x - start.x) * eased,
+          y: start.y + (end.y - start.y) * eased
+        });
+        if (progress < 1) allFinished = false;
+      }
 
-      if (progress === 1) {
-        drawPlinkoBoard(null, bucketIndex);
+      drawPlinkoBoard(balls, allFinished ? drops.map((drop) => drop.bucketIndex) : []);
+      if (allFinished) {
         resolve();
       } else {
         requestAnimationFrame(animateFrame);
@@ -1036,28 +1050,39 @@ dropPlinkoButton.addEventListener("click", async function () {
   }
 
   const wager = validation.wager;
-  const { path, bucketIndex } = createPlinkoDropPath();
-  const multiplier = plinkoMultipliers[bucketIndex];
-  const payout = Math.floor(wager * multiplier);
-  money -= wager;
+  const ballCount = Number(plinkoBallCountInput.value);
+  if (!Number.isInteger(ballCount) || ballCount < 1 || ballCount > 5) {
+    plinkoResult.textContent = "Choose between 1 and 5 balls.";
+    return;
+  }
+  const totalWager = wager * ballCount;
+  if (totalWager > money) {
+    plinkoResult.textContent = "Your combined wagers cannot be greater than your cash.";
+    return;
+  }
+
+  const drops = Array.from({ length: ballCount }, () => {
+    const { path, bucketIndex } = createPlinkoDropPath();
+    return { path, bucketIndex };
+  });
+  const totalPayout = drops.reduce((total, drop) => total + Math.floor(wager * plinkoMultipliers[drop.bucketIndex]), 0);
+  money -= totalWager;
   updateWalletDisplay();
   plinkoDropActive = true;
   dropPlinkoButton.disabled = true;
-  plinkoResult.textContent = "Your chip is bouncing through the board...";
+  plinkoBallCountInput.disabled = true;
+  plinkoResult.textContent = drops.length === 1 ? "Your ball is bouncing through the board..." : drops.length + " balls are bouncing through the board...";
 
   try {
-    await animatePlinkoDrop(path, bucketIndex);
-    money += payout;
-    if (payout > wager) {
-      plinkoResult.textContent = "Landed in " + multiplier + "x. You won $" + (payout - wager) + " profit.";
-    } else if (payout === wager) {
-      plinkoResult.textContent = "Landed in " + multiplier + "x. Your wager is returned.";
-    } else {
-      plinkoResult.textContent = "Landed in " + multiplier + "x. $" + payout + " returned.";
-    }
+    await animatePlinkoDrops(drops);
+    money += totalPayout;
+    const outcomes = drops.map((drop) => plinkoMultipliers[drop.bucketIndex] + "x").join(", ");
+    const net = totalPayout - totalWager;
+    plinkoResult.textContent = outcomes + " pockets. Total payout: $" + totalPayout + "; " + (net >= 0 ? "net win: $" + net : "net loss: $" + -net) + ".";
   } finally {
     plinkoDropActive = false;
     dropPlinkoButton.disabled = false;
+    plinkoBallCountInput.disabled = false;
     updateWalletDisplay();
   }
 });

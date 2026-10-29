@@ -149,8 +149,17 @@
         <div class="plinko-stage">
           <canvas id="plinko-board" width="480" height="470" role="img" aria-label="Plinko board with nine rows of pegs and ten payout pockets"></canvas>
         </div>
-        <button id="drop-plinko" type="button">Drop chip</button>
-        <p id="plinko-result" aria-live="polite">Set your wager and drop a chip.</p>
+        <div class="plinko-actions">
+          <label for="plinko-ball-count">Balls</label>
+          <select id="plinko-ball-count" aria-label="Number of balls to drop">
+            <option value="1">1 ball</option>
+            <option value="2">2 balls</option>
+            <option value="3">3 balls</option>
+            <option value="5">5 balls</option>
+          </select>
+          <button id="drop-plinko" type="button">Drop balls</button>
+        </div>
+        <p id="plinko-result" aria-live="polite">Set your wager and choose how many balls to drop.</p>
       </div>
       <div id="crash-game" hidden>
         <p>Cash out before the multiplier crashes. The crash point is chosen randomly each round.</p>

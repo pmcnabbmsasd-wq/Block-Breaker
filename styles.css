@@ -199,6 +199,27 @@ button:focus-visible {
   box-shadow: inset 0 0 24px #000b;
 }
 
+.plinko-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.plinko-actions label {
+  margin: 0;
+}
+
+.plinko-actions select {
+  width: auto;
+  min-width: 100px;
+}
+
+.plinko-actions button {
+  margin-top: 0;
+}
+
 #plinko-board {
   width: 100%;
   height: auto;
