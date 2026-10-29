@@ -29,6 +29,23 @@ const crashMultiplierDisplay = document.getElementById("crash-multiplier");
 const startCrashButton = document.getElementById("start-crash");
 const cashoutCrashButton = document.getElementById("cashout-crash");
 const crashResult = document.getElementById("crash-result");
+const memoryVaultGame = document.getElementById("memory-vault-game");
+const memoryVaultGrid = document.getElementById("memory-vault-grid");
+const memoryVaultRoundDisplay = document.getElementById("memory-vault-round");
+const startMemoryVaultButton = document.getElementById("start-memory-vault");
+const continueMemoryVaultButton = document.getElementById("continue-memory-vault");
+const bankMemoryVaultButton = document.getElementById("bank-memory-vault");
+const memoryVaultResult = document.getElementById("memory-vault-result");
+const memoryVaultTiles = Array.from({ length: 16 }, (_, index) => {
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "memory-vault-tile";
+  tile.dataset.memoryTile = String(index);
+  tile.setAttribute("aria-label", "Vault tile " + (index + 1));
+  tile.disabled = true;
+  memoryVaultGrid.appendChild(tile);
+  return tile;
+});
 const coinFlipGame = document.getElementById("coin-flip-game");
 const cupBallGame = document.getElementById("cup-ball-game");
 const cupBallStage = document.getElementById("cup-ball-stage");
@@ -76,6 +93,13 @@ let crashPoint = 1;
 let crashMultiplier = 1;
 let crashStartTime = 0;
 let crashAnimationFrame = 0;
+let memoryVaultActive = false;
+let memoryVaultBusy = false;
+let memoryVaultCanBank = false;
+let memoryVaultWager = 0;
+let memoryVaultRound = 0;
+let memoryVaultSequence = [];
+let memoryVaultInputIndex = 0;
 
 const rouletteColors = [
   "green",
@@ -345,6 +369,96 @@ function updateCrashFrame(timestamp) {
 
 drawCrashChart(0);
 
+function memoryVaultMultiplier() {
+  return Math.pow(1.5, memoryVaultRound);
+}
+
+function updateMemoryVaultControls() {
+  const canChooseTile = memoryVaultActive && !memoryVaultBusy && !memoryVaultCanBank;
+  memoryVaultTiles.forEach((tile) => {
+    tile.disabled = !canChooseTile;
+  });
+  startMemoryVaultButton.disabled = memoryVaultActive;
+  continueMemoryVaultButton.disabled = !memoryVaultActive || !memoryVaultCanBank;
+  bankMemoryVaultButton.disabled = !memoryVaultActive || !memoryVaultCanBank;
+}
+
+async function showMemoryVaultSequence() {
+  memoryVaultRound++;
+  const newTiles = memoryVaultRound === 1 ? 3 : 1;
+  for (let count = 0; count < newTiles; count++) {
+    memoryVaultSequence.push(Math.floor(Math.random() * memoryVaultTiles.length));
+  }
+  memoryVaultInputIndex = 0;
+  memoryVaultBusy = true;
+  memoryVaultCanBank = false;
+  memoryVaultRoundDisplay.textContent = "Round " + memoryVaultRound;
+  memoryVaultResult.textContent = "Watch the " + memoryVaultSequence.length + "-tile sequence.";
+  updateMemoryVaultControls();
+
+  for (const tileIndex of memoryVaultSequence) {
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    memoryVaultTiles[tileIndex].classList.add("is-lit");
+    await new Promise((resolve) => setTimeout(resolve, 380));
+    memoryVaultTiles[tileIndex].classList.remove("is-lit");
+  }
+
+  memoryVaultBusy = false;
+  memoryVaultResult.textContent = "Repeat the sequence in order.";
+  updateMemoryVaultControls();
+}
+
+async function selectMemoryVaultTile(tileIndex) {
+  if (!memoryVaultActive || memoryVaultBusy || memoryVaultCanBank) return;
+  memoryVaultBusy = true;
+  updateMemoryVaultControls();
+  const tile = memoryVaultTiles[tileIndex];
+  const isCorrect = memoryVaultSequence[memoryVaultInputIndex] === tileIndex;
+  tile.classList.add(isCorrect ? "is-lit" : "is-wrong");
+  await new Promise((resolve) => setTimeout(resolve, 180));
+  tile.classList.remove("is-lit", "is-wrong");
+
+  if (!isCorrect) {
+    memoryVaultActive = false;
+    memoryVaultBusy = false;
+    memoryVaultCanBank = false;
+    memoryVaultSequence = [];
+    memoryVaultRoundDisplay.textContent = "Vault locked";
+    memoryVaultResult.textContent = "Wrong tile. You lost $" + memoryVaultWager + ". Start a new run to try again.";
+    updateMemoryVaultControls();
+    return;
+  }
+
+  memoryVaultInputIndex++;
+  if (memoryVaultInputIndex === memoryVaultSequence.length) {
+    memoryVaultBusy = false;
+    memoryVaultCanBank = true;
+    const multiplier = memoryVaultMultiplier();
+    const payout = Math.floor(memoryVaultWager * multiplier);
+    memoryVaultResult.textContent = "Round cleared: " + multiplier.toFixed(2) + "x, or $" + payout + ". Bank it or risk the next round.";
+  } else {
+    memoryVaultBusy = false;
+  }
+  updateMemoryVaultControls();
+}
+
+function bankMemoryVaultPayout() {
+  if (!memoryVaultActive || !memoryVaultCanBank) return;
+  const multiplier = memoryVaultMultiplier();
+  const payout = Math.floor(memoryVaultWager * multiplier);
+  money += payout;
+  memoryVaultActive = false;
+  memoryVaultCanBank = false;
+  memoryVaultRoundDisplay.textContent = "Banked at round " + memoryVaultRound;
+  memoryVaultResult.textContent = "You banked $" + payout + " at " + multiplier.toFixed(2) + "x, including $" + (payout - memoryVaultWager) + " profit.";
+  updateMemoryVaultControls();
+  updateWalletDisplay();
+}
+
+for (const tile of memoryVaultTiles) {
+  tile.addEventListener("click", () => selectMemoryVaultTile(Number(tile.dataset.memoryTile)));
+}
+
 async function spinWheelToPocket(pocket) {
   const targetRotation = (360 - ((pocket + 0.5) * 360) / rouletteColors.length) % 360;
   const currentRotation = ((wheelRotation % 360) + 360) % 360;
@@ -519,12 +633,13 @@ function showCasinoGame(game) {
   slotsGame.hidden = game !== "slots";
   plinkoGame.hidden = game !== "plinko";
   crashGame.hidden = game !== "crash";
+  memoryVaultGame.hidden = game !== "memory-vault";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -793,6 +908,10 @@ document.getElementById("show-crash").addEventListener("click", function () {
   showCasinoGame("crash");
 });
 
+document.getElementById("show-memory-vault").addEventListener("click", function () {
+  showCasinoGame("memory-vault");
+});
+
 document.getElementById("show-coin-flip").addEventListener("click", function () {
   showCasinoGame("coin-flip");
 });
@@ -975,6 +1094,33 @@ cashoutCrashButton.addEventListener("click", function () {
     finishCrashRound(true, currentMultiplier);
   }
 });
+
+startMemoryVaultButton.addEventListener("click", function () {
+  if (memoryVaultActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    memoryVaultResult.textContent = validation.error;
+    return;
+  }
+
+  memoryVaultWager = validation.wager;
+  money -= memoryVaultWager;
+  memoryVaultActive = true;
+  memoryVaultBusy = false;
+  memoryVaultCanBank = false;
+  memoryVaultRound = 0;
+  memoryVaultSequence = [];
+  memoryVaultRoundDisplay.textContent = "Opening vault";
+  updateWalletDisplay();
+  showMemoryVaultSequence();
+});
+
+continueMemoryVaultButton.addEventListener("click", function () {
+  if (!memoryVaultActive || !memoryVaultCanBank) return;
+  showMemoryVaultSequence();
+});
+
+bankMemoryVaultButton.addEventListener("click", bankMemoryVaultPayout);
 
 openCaseButton.addEventListener("click", async function () {
   const caseCost = 50;

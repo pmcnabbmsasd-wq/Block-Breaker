@@ -53,6 +53,7 @@
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-plinko" type="button" aria-pressed="false">Plinko</button>
         <button id="show-crash" type="button" aria-pressed="false">Crash</button>
+        <button id="show-memory-vault" type="button" aria-pressed="false">Memory Vault</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
         <button id="show-case-opening" type="button" aria-pressed="false">Case Opening</button>
@@ -162,6 +163,17 @@
           <button id="cashout-crash" type="button" disabled>Cash out</button>
         </div>
         <p id="crash-result" aria-live="polite">Set your wager and start a round.</p>
+      </div>
+      <div id="memory-vault-game" hidden>
+        <p>Repeat the lights in order. Each cleared round raises your payout; bank it or risk it on a longer sequence.</p>
+        <p id="memory-vault-round" class="memory-vault-round" aria-live="polite">Ready</p>
+        <div id="memory-vault-grid" class="memory-vault-grid" role="group" aria-label="Memory Vault tiles"></div>
+        <div class="memory-vault-actions">
+          <button id="start-memory-vault" type="button">Start round</button>
+          <button id="continue-memory-vault" type="button" disabled>Risk it: next round</button>
+          <button id="bank-memory-vault" type="button" disabled>Bank payout</button>
+        </div>
+        <p id="memory-vault-result" aria-live="polite">Set your wager to enter the vault.</p>
       </div>
       <div id="coin-flip-game" hidden>
         <p>Pick heads or tails. A correct guess pays 1:1.</p>
