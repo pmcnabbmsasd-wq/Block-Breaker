@@ -22,6 +22,13 @@ const plinkoBoard = document.getElementById("plinko-board");
 const plinkoContext = plinkoBoard.getContext("2d");
 const dropPlinkoButton = document.getElementById("drop-plinko");
 const plinkoResult = document.getElementById("plinko-result");
+const crashGame = document.getElementById("crash-game");
+const crashChart = document.getElementById("crash-chart");
+const crashContext = crashChart.getContext("2d");
+const crashMultiplierDisplay = document.getElementById("crash-multiplier");
+const startCrashButton = document.getElementById("start-crash");
+const cashoutCrashButton = document.getElementById("cashout-crash");
+const crashResult = document.getElementById("crash-result");
 const coinFlipGame = document.getElementById("coin-flip-game");
 const cupBallGame = document.getElementById("cup-ball-game");
 const cupBallStage = document.getElementById("cup-ball-stage");
@@ -63,6 +70,12 @@ let ballCupIndex = 0;
 let cupBallWager = 0;
 let cupBallRoundActive = false;
 let plinkoDropActive = false;
+let crashRoundActive = false;
+let crashWager = 0;
+let crashPoint = 1;
+let crashMultiplier = 1;
+let crashStartTime = 0;
+let crashAnimationFrame = 0;
 
 const rouletteColors = [
   "green",
@@ -238,6 +251,100 @@ function animatePlinkoDrop(path, bucketIndex) {
 
 drawPlinkoBoard();
 
+function drawCrashChart(elapsed, crashed = false) {
+  const width = crashChart.width;
+  const height = crashChart.height;
+  const left = 42;
+  const right = width - 18;
+  const bottom = height - 30;
+  crashContext.clearRect(0, 0, width, height);
+
+  crashContext.font = "10px sans-serif";
+  crashContext.textAlign = "right";
+  crashContext.textBaseline = "middle";
+  for (const [label, y] of [
+    ["5x", bottom - Math.log(5) * 80],
+    ["2x", bottom - Math.log(2) * 80],
+    ["1x", bottom]
+  ]) {
+    crashContext.beginPath();
+    crashContext.moveTo(left, y);
+    crashContext.lineTo(right, y);
+    crashContext.strokeStyle = "#ffffff20";
+    crashContext.lineWidth = 1;
+    crashContext.stroke();
+    crashContext.fillStyle = "#aeb6bf";
+    crashContext.fillText(label, left - 8, y);
+  }
+
+  const pointCount = Math.max(1, Math.ceil(elapsed / 80));
+  const pointAt = (time) => ({
+    x: Math.min(left + (time / 15000) * (right - left), right),
+    y: Math.max(14, bottom - Math.log(Math.exp(time / 5000)) * 80)
+  });
+  crashContext.beginPath();
+  for (let index = 0; index <= pointCount; index++) {
+    const point = pointAt(elapsed * index / pointCount);
+    if (index === 0) {
+      crashContext.moveTo(point.x, point.y);
+    } else {
+      crashContext.lineTo(point.x, point.y);
+    }
+  }
+  crashContext.strokeStyle = crashed ? "#ff6961" : "#63e3b4";
+  crashContext.lineWidth = 3;
+  crashContext.lineJoin = "round";
+  crashContext.stroke();
+
+  const end = pointAt(elapsed);
+  crashContext.beginPath();
+  crashContext.arc(end.x, end.y, 5, 0, Math.PI * 2);
+  crashContext.fillStyle = crashed ? "#ff6961" : "#ffe08a";
+  crashContext.fill();
+}
+
+function generateCrashPoint() {
+  const point = Math.floor((0.99 / (1 - Math.random())) * 100) / 100;
+  return Math.min(1000, Math.max(1, point));
+}
+
+function finishCrashRound(cashedOut, multiplier) {
+  if (!crashRoundActive) return;
+  crashRoundActive = false;
+  crashMultiplier = multiplier;
+  cancelAnimationFrame(crashAnimationFrame);
+  crashMultiplierDisplay.textContent = multiplier.toFixed(2) + "x";
+  crashMultiplierDisplay.classList.toggle("is-crashed", !cashedOut);
+  drawCrashChart(performance.now() - crashStartTime, !cashedOut);
+  startCrashButton.disabled = false;
+  cashoutCrashButton.disabled = true;
+
+  if (cashedOut) {
+    const payout = Math.floor(crashWager * multiplier);
+    money += payout;
+    crashResult.textContent = "Cashed out at " + multiplier.toFixed(2) + "x. Returned $" + payout + " ($" + (payout - crashWager) + " profit).";
+  } else {
+    crashResult.textContent = "Crashed at " + multiplier.toFixed(2) + "x. You lost $" + crashWager + ".";
+  }
+  updateWalletDisplay();
+}
+
+function updateCrashFrame(timestamp) {
+  if (!crashRoundActive) return;
+  const elapsed = timestamp - crashStartTime;
+  crashMultiplier = Math.exp(elapsed / 5000);
+  if (crashMultiplier >= crashPoint) {
+    finishCrashRound(false, crashPoint);
+    return;
+  }
+
+  crashMultiplierDisplay.textContent = crashMultiplier.toFixed(2) + "x";
+  drawCrashChart(elapsed);
+  crashAnimationFrame = requestAnimationFrame(updateCrashFrame);
+}
+
+drawCrashChart(0);
+
 async function spinWheelToPocket(pocket) {
   const targetRotation = (360 - ((pocket + 0.5) * 360) / rouletteColors.length) % 360;
   const currentRotation = ((wheelRotation % 360) + 360) % 360;
@@ -411,12 +518,13 @@ function showCasinoGame(game) {
   pokerGame.hidden = game !== "poker";
   slotsGame.hidden = game !== "slots";
   plinkoGame.hidden = game !== "plinko";
+  crashGame.hidden = game !== "crash";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -681,6 +789,10 @@ document.getElementById("show-plinko").addEventListener("click", function () {
   showCasinoGame("plinko");
 });
 
+document.getElementById("show-crash").addEventListener("click", function () {
+  showCasinoGame("crash");
+});
+
 document.getElementById("show-coin-flip").addEventListener("click", function () {
   showCasinoGame("coin-flip");
 });
@@ -828,6 +940,39 @@ dropPlinkoButton.addEventListener("click", async function () {
     plinkoDropActive = false;
     dropPlinkoButton.disabled = false;
     updateWalletDisplay();
+  }
+});
+
+startCrashButton.addEventListener("click", function () {
+  if (crashRoundActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    crashResult.textContent = validation.error;
+    return;
+  }
+
+  crashWager = validation.wager;
+  money -= crashWager;
+  crashPoint = generateCrashPoint();
+  crashStartTime = performance.now();
+  crashMultiplier = 1;
+  crashRoundActive = true;
+  crashMultiplierDisplay.classList.remove("is-crashed");
+  crashMultiplierDisplay.textContent = "1.00x";
+  crashResult.textContent = "Multiplier is climbing. Cash out before it crashes.";
+  startCrashButton.disabled = true;
+  cashoutCrashButton.disabled = false;
+  updateWalletDisplay();
+  crashAnimationFrame = requestAnimationFrame(updateCrashFrame);
+});
+
+cashoutCrashButton.addEventListener("click", function () {
+  if (!crashRoundActive) return;
+  const currentMultiplier = Math.exp((performance.now() - crashStartTime) / 5000);
+  if (currentMultiplier >= crashPoint) {
+    finishCrashRound(false, crashPoint);
+  } else {
+    finishCrashRound(true, currentMultiplier);
   }
 });
 
