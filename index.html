@@ -51,6 +51,7 @@
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
         <button id="show-poker" type="button" aria-pressed="false">Poker</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
+        <button id="show-plinko" type="button" aria-pressed="false">Plinko</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
         <button id="show-case-opening" type="button" aria-pressed="false">Case Opening</button>
@@ -140,6 +141,14 @@
         </div>
         <button id="spin-slots" type="button">Spin slots</button>
         <p id="slots-result" aria-live="polite">Place your bet and spin to play.</p>
+      </div>
+      <div id="plinko-game" hidden>
+        <p>Drop a chip through the pegs. The pocket multiplier determines your payout.</p>
+        <div class="plinko-stage">
+          <canvas id="plinko-board" width="480" height="470" role="img" aria-label="Plinko board with nine rows of pegs and ten payout pockets"></canvas>
+        </div>
+        <button id="drop-plinko" type="button">Drop chip</button>
+        <p id="plinko-result" aria-live="polite">Set your wager and drop a chip.</p>
       </div>
       <div id="coin-flip-game" hidden>
         <p>Pick heads or tails. A correct guess pays 1:1.</p>

@@ -17,6 +17,11 @@ const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
 const pokerGame = document.getElementById("poker-game");
 const slotsGame = document.getElementById("slots-game");
+const plinkoGame = document.getElementById("plinko-game");
+const plinkoBoard = document.getElementById("plinko-board");
+const plinkoContext = plinkoBoard.getContext("2d");
+const dropPlinkoButton = document.getElementById("drop-plinko");
+const plinkoResult = document.getElementById("plinko-result");
 const coinFlipGame = document.getElementById("coin-flip-game");
 const cupBallGame = document.getElementById("cup-ball-game");
 const cupBallStage = document.getElementById("cup-ball-stage");
@@ -57,6 +62,7 @@ let cupPositions = [0, 1, 2];
 let ballCupIndex = 0;
 let cupBallWager = 0;
 let cupBallRoundActive = false;
+let plinkoDropActive = false;
 
 const rouletteColors = [
   "green",
@@ -110,6 +116,127 @@ function drawRouletteWheel() {
   rouletteContext.textBaseline = "middle";
   rouletteContext.fillText("0", center, center);
 }
+
+const plinkoRows = 9;
+const plinkoBuckets = 10;
+const plinkoSpacing = 38;
+const plinkoMultipliers = [6, 2.5, 1.5, 1, 0.6, 0.6, 1, 1.5, 2.5, 6];
+
+function plinkoPegPosition(row, column) {
+  return {
+    x: plinkoBoard.width / 2 - (row * plinkoSpacing) / 2 + column * plinkoSpacing,
+    y: 50 + row * 37
+  };
+}
+
+function plinkoBucketCenter(index) {
+  return plinkoBoard.width / 2 - ((plinkoBuckets - 1) * plinkoSpacing) / 2 + index * plinkoSpacing;
+}
+
+function plinkoMultiplierColor(multiplier) {
+  if (multiplier >= 5) return "#ff7468";
+  if (multiplier >= 2) return "#ffc857";
+  if (multiplier > 1) return "#62d6c5";
+  if (multiplier === 1) return "#a8d972";
+  return "#d3d8df";
+}
+
+function drawPlinkoBoard(ball = null, highlightedBucket = -1) {
+  const width = plinkoBoard.width;
+  const height = plinkoBoard.height;
+  plinkoContext.clearRect(0, 0, width, height);
+
+  for (let row = 0; row < plinkoRows; row++) {
+    for (let column = 0; column <= row; column++) {
+      const peg = plinkoPegPosition(row, column);
+      plinkoContext.beginPath();
+      plinkoContext.arc(peg.x, peg.y, 3.5, 0, Math.PI * 2);
+      plinkoContext.fillStyle = "#e5d7a4";
+      plinkoContext.shadowColor = "#ffe7a0";
+      plinkoContext.shadowBlur = 5;
+      plinkoContext.fill();
+    }
+  }
+  plinkoContext.shadowBlur = 0;
+
+  const bucketTop = 386;
+  const bucketWidth = plinkoSpacing - 2;
+  for (let index = 0; index < plinkoBuckets; index++) {
+    const center = plinkoBucketCenter(index);
+    const multiplier = plinkoMultipliers[index];
+    const color = plinkoMultiplierColor(multiplier);
+    plinkoContext.fillStyle = index === highlightedBucket ? color : color + "33";
+    plinkoContext.fillRect(center - bucketWidth / 2, bucketTop, bucketWidth, 54);
+    plinkoContext.strokeStyle = color;
+    plinkoContext.lineWidth = 1;
+    plinkoContext.strokeRect(center - bucketWidth / 2, bucketTop, bucketWidth, 54);
+    plinkoContext.fillStyle = index === highlightedBucket ? "#111" : color;
+    plinkoContext.font = "bold 10px sans-serif";
+    plinkoContext.textAlign = "center";
+    plinkoContext.textBaseline = "middle";
+    plinkoContext.fillText(multiplier + "x", center, bucketTop + 28);
+  }
+
+  if (ball) {
+    const ballGradient = plinkoContext.createRadialGradient(ball.x - 2, ball.y - 3, 1, ball.x, ball.y, 8);
+    ballGradient.addColorStop(0, "#fff8d8");
+    ballGradient.addColorStop(1, "#ff9f43");
+    plinkoContext.beginPath();
+    plinkoContext.arc(ball.x, ball.y, 7, 0, Math.PI * 2);
+    plinkoContext.fillStyle = ballGradient;
+    plinkoContext.shadowColor = "#ffb347";
+    plinkoContext.shadowBlur = 12;
+    plinkoContext.fill();
+    plinkoContext.shadowBlur = 0;
+  }
+}
+
+function createPlinkoDropPath() {
+  const path = [{ x: plinkoBoard.width / 2, y: 22 }, plinkoPegPosition(0, 0)];
+  let bucketIndex = 0;
+  for (let row = 0; row < plinkoRows; row++) {
+    bucketIndex += Math.random() < 0.5 ? 0 : 1;
+    if (row < plinkoRows - 1) {
+      path.push(plinkoPegPosition(row + 1, bucketIndex));
+    } else {
+      path.push({ x: plinkoBucketCenter(bucketIndex), y: 418 });
+    }
+  }
+  return { path, bucketIndex };
+}
+
+function animatePlinkoDrop(path, bucketIndex) {
+  return new Promise((resolve) => {
+    const startTime = performance.now();
+    const segmentCount = path.length - 1;
+    const duration = segmentCount * 145;
+
+    function animateFrame(now) {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const segmentProgress = progress * segmentCount;
+      const segment = Math.min(Math.floor(segmentProgress), segmentCount - 1);
+      const fraction = progress === 1 ? 1 : segmentProgress - segment;
+      const eased = fraction * fraction * (3 - 2 * fraction);
+      const start = path[segment];
+      const end = path[segment + 1];
+      drawPlinkoBoard({
+        x: start.x + (end.x - start.x) * eased,
+        y: start.y + (end.y - start.y) * eased
+      });
+
+      if (progress === 1) {
+        drawPlinkoBoard(null, bucketIndex);
+        resolve();
+      } else {
+        requestAnimationFrame(animateFrame);
+      }
+    }
+
+    requestAnimationFrame(animateFrame);
+  });
+}
+
+drawPlinkoBoard();
 
 async function spinWheelToPocket(pocket) {
   const targetRotation = (360 - ((pocket + 0.5) * 360) / rouletteColors.length) % 360;
@@ -283,12 +410,13 @@ function showCasinoGame(game) {
   blackjackGame.hidden = game !== "blackjack";
   pokerGame.hidden = game !== "poker";
   slotsGame.hidden = game !== "slots";
+  plinkoGame.hidden = game !== "plinko";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -549,6 +677,10 @@ document.getElementById("show-slots").addEventListener("click", function () {
   showCasinoGame("slots");
 });
 
+document.getElementById("show-plinko").addEventListener("click", function () {
+  showCasinoGame("plinko");
+});
+
 document.getElementById("show-coin-flip").addEventListener("click", function () {
   showCasinoGame("coin-flip");
 });
@@ -660,6 +792,41 @@ slotsButton.addEventListener("click", async function () {
     }
   } finally {
     slotsButton.disabled = false;
+    updateWalletDisplay();
+  }
+});
+
+dropPlinkoButton.addEventListener("click", async function () {
+  if (plinkoDropActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    plinkoResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const { path, bucketIndex } = createPlinkoDropPath();
+  const multiplier = plinkoMultipliers[bucketIndex];
+  const payout = Math.floor(wager * multiplier);
+  money -= wager;
+  updateWalletDisplay();
+  plinkoDropActive = true;
+  dropPlinkoButton.disabled = true;
+  plinkoResult.textContent = "Your chip is bouncing through the board...";
+
+  try {
+    await animatePlinkoDrop(path, bucketIndex);
+    money += payout;
+    if (payout > wager) {
+      plinkoResult.textContent = "Landed in " + multiplier + "x. You won $" + (payout - wager) + " profit.";
+    } else if (payout === wager) {
+      plinkoResult.textContent = "Landed in " + multiplier + "x. Your wager is returned.";
+    } else {
+      plinkoResult.textContent = "Landed in " + multiplier + "x. $" + payout + " returned.";
+    }
+  } finally {
+    plinkoDropActive = false;
+    dropPlinkoButton.disabled = false;
     updateWalletDisplay();
   }
 });
