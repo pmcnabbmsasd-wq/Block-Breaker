@@ -9,40 +9,68 @@ const BRICK_HEIGHT = 20;
 const BRICK_GAP = 6;     // empty space between bricks
 const BRICKS_TOP = 50;   // how far down the first row starts
 
-// Builds the list of bricks. Each brick is an object with an
-// x, y, width, and height.
-function makeBricks(level = 1) {
-  const list = [];
-  const rows = Math.min(BRICK_ROWS + Math.floor((level - 1) / 2), 8);
+class Brick {
+  constructor(position) {
+    Object.assign(this, position);
+    this.powerUp = null;
+  }
+}
 
-  // Center the whole block of bricks on the screen.
-  const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
-  const left = (WIDTH - totalWidth) / 2;
+class PowerUpBrick extends Brick {
+  constructor(position, powerUp) {
+    super(position);
+    this.powerUp = powerUp;
+  }
+}
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < BRICK_COLUMNS; col++) {
-      list.push({
-        x: left + col * (BRICK_WIDTH + BRICK_GAP),
-        y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_GAP),
-        width: BRICK_WIDTH,
-        height: BRICK_HEIGHT,
-        row,
-        col,
-        powerUp: null
-      });
+class BrickCreator {
+  buildBricks(level = 1) {
+    const list = [];
+    const rows = Math.min(BRICK_ROWS + Math.floor((level - 1) / 2), 8);
+
+    // Center the whole block of bricks on the screen.
+    const totalWidth = BRICK_COLUMNS * BRICK_WIDTH + (BRICK_COLUMNS - 1) * BRICK_GAP;
+    const left = (WIDTH - totalWidth) / 2;
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < BRICK_COLUMNS; col++) {
+        const position = {
+          x: left + col * (BRICK_WIDTH + BRICK_GAP),
+          y: BRICKS_TOP + row * (BRICK_HEIGHT + BRICK_GAP),
+          width: BRICK_WIDTH,
+          height: BRICK_HEIGHT,
+          row,
+          col
+        };
+        list.push(this.createBrick(position, level, list.length));
+      }
     }
+
+    return list;
   }
 
-  list[10].powerUp = "multiball";
-  list[21].powerUp = "tnt";
-  if (level % 2 === 0) {
-    list[5].powerUp = "extraLife";
+  createBrick() {
+    throw new Error("BrickCreator subclasses must implement createBrick()");
   }
-  if (level === 3) {
-    list[26].powerUp = "grenade";
-  }
+}
 
-  return list;
+class LevelBrickCreator extends BrickCreator {
+  createBrick(position, level, index) {
+    let powerUp = null;
+    if (level === 6 && position.row === 2) {
+      powerUp = "extraLife";
+    } else if (index === 10) {
+      powerUp = "multiball";
+    } else if (index === 21) {
+      powerUp = "tnt";
+    } else if (index === 5 && level % 2 === 0) {
+      powerUp = "extraLife";
+    } else if (index === 26 && level === 3) {
+      powerUp = "grenade";
+    }
+
+    return powerUp ? new PowerUpBrick(position, powerUp) : new Brick(position);
+  }
 }
 
 // Draws every brick in the list.

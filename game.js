@@ -117,7 +117,7 @@ let activePaddleSkin = { ...defaultPaddleSkin };
 
 
 // ------------------------------------------------------------
-// THE BRICKS (the list is filled in by makeBricks() in bricks.js)
+// THE BRICKS (the list is filled by the level brick creator in bricks.js)
 // ------------------------------------------------------------
 let bricks = [];
 let money = 0;
@@ -549,7 +549,7 @@ function startLevel() {
   if (boss) {
     respawnsLeft = 20;
   }
-  bricks = boss ? [] : makeBricks(currentLevel);
+  bricks = boss ? [] : new LevelBrickCreator().buildBricks(currentLevel);
   levelTransitionTicks = 0;
   grenadeDrops.length = 0;
   paddle.width = Math.max(60, 90 - (currentLevel - 1) * 3);
