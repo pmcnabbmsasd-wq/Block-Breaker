@@ -53,6 +53,7 @@
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-plinko" type="button" aria-pressed="false">Plinko</button>
         <button id="show-crash" type="button" aria-pressed="false">Crash</button>
+        <button id="show-mines" type="button" aria-pressed="false">Mines</button>
         <button id="show-memory-vault" type="button" aria-pressed="false">Memory Vault</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
@@ -172,6 +173,23 @@
           <button id="cashout-crash" type="button" disabled>Cash out</button>
         </div>
         <p id="crash-result" aria-live="polite">Set your wager and start a round.</p>
+      </div>
+      <div id="mines-game" hidden>
+        <p>Pick safe tiles to raise your payout. Cash out anytime; hit a mine and lose your wager.</p>
+        <div class="mines-controls">
+          <label for="mines-count">Mines</label>
+          <select id="mines-count">
+            <option value="3">3</option>
+            <option value="5">5</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+          </select>
+          <button id="start-mines" type="button">Start round</button>
+          <button id="cashout-mines" type="button" disabled>Cash out</button>
+        </div>
+        <p id="mines-round" class="mines-status" aria-live="polite">Choose a mine count and set your wager.</p>
+        <div id="mines-grid" class="mines-grid" role="group" aria-label="Mines board"></div>
+        <p id="mines-result" aria-live="polite">Set your wager to start a round.</p>
       </div>
       <div id="memory-vault-game" hidden>
         <p>Repeat the lights in order. Each cleared round raises your payout; bank it or risk it on a longer sequence.</p>

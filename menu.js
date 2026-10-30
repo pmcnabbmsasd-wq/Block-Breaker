@@ -30,6 +30,24 @@ const crashMultiplierDisplay = document.getElementById("crash-multiplier");
 const startCrashButton = document.getElementById("start-crash");
 const cashoutCrashButton = document.getElementById("cashout-crash");
 const crashResult = document.getElementById("crash-result");
+const minesGame = document.getElementById("mines-game");
+const minesGrid = document.getElementById("mines-grid");
+const minesCountInput = document.getElementById("mines-count");
+const startMinesButton = document.getElementById("start-mines");
+const cashoutMinesButton = document.getElementById("cashout-mines");
+const minesRoundDisplay = document.getElementById("mines-round");
+const minesResult = document.getElementById("mines-result");
+const minesTileCount = 25;
+const minesTiles = Array.from({ length: minesTileCount }, (_, index) => {
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "mines-tile";
+  tile.dataset.minesTile = String(index);
+  tile.setAttribute("aria-label", "Hidden tile " + (index + 1));
+  tile.disabled = true;
+  minesGrid.appendChild(tile);
+  return tile;
+});
 const memoryVaultGame = document.getElementById("memory-vault-game");
 const memoryVaultGrid = document.getElementById("memory-vault-grid");
 const memoryVaultRoundDisplay = document.getElementById("memory-vault-round");
@@ -94,6 +112,11 @@ let crashPoint = 1;
 let crashMultiplier = 1;
 let crashStartTime = 0;
 let crashAnimationFrame = 0;
+let minesRoundActive = false;
+let minesWager = 0;
+let minesCount = 3;
+let minesSafePicks = 0;
+let minesLocations = new Set();
 let memoryVaultActive = false;
 let memoryVaultBusy = false;
 let memoryVaultCanBank = false;
@@ -469,6 +492,113 @@ function bankMemoryVaultPayout() {
   updateWalletDisplay();
 }
 
+function minesMultiplier() {
+  let survivalProbability = 1;
+  for (let pick = 0; pick < minesSafePicks; pick++) {
+    survivalProbability *= (minesTileCount - minesCount - pick) / (minesTileCount - pick);
+  }
+  return 0.97 / survivalProbability;
+}
+
+function updateMinesControls() {
+  minesTiles.forEach((tile) => {
+    tile.disabled = !minesRoundActive || tile.classList.contains("is-safe");
+  });
+  minesCountInput.disabled = minesRoundActive;
+  startMinesButton.disabled = minesRoundActive;
+  cashoutMinesButton.disabled = !minesRoundActive || minesSafePicks === 0;
+}
+
+function finishMinesRound() {
+  minesRoundActive = false;
+  minesTiles.forEach((tile, index) => {
+    if (minesLocations.has(index)) {
+      tile.classList.add("is-mine");
+      tile.textContent = "MINE";
+      tile.setAttribute("aria-label", "Mine");
+    }
+    tile.disabled = true;
+  });
+  updateMinesControls();
+}
+
+function cashOutMinesRound(allSafeTilesFound = false) {
+  if (!minesRoundActive || minesSafePicks === 0) return;
+  const multiplier = minesMultiplier();
+  const payout = Math.floor(minesWager * multiplier);
+  money += payout;
+  finishMinesRound();
+  minesRoundDisplay.textContent = "Cashed out at " + multiplier.toFixed(2) + "x";
+  minesResult.textContent = (allSafeTilesFound ? "All safe tiles found! " : "Cashed out! ") +
+    "You received $" + payout + " (" + (payout - minesWager >= 0 ? "profit: $" + (payout - minesWager) : "loss: $" + (minesWager - payout)) + ").";
+  updateWalletDisplay();
+}
+
+function selectMinesTile(tileIndex) {
+  if (!minesRoundActive) return;
+  const tile = minesTiles[tileIndex];
+  if (minesLocations.has(tileIndex)) {
+    tile.classList.add("is-mine");
+    tile.textContent = "MINE";
+    tile.setAttribute("aria-label", "Mine");
+    finishMinesRound();
+    minesRoundDisplay.textContent = "Mine hit";
+    minesResult.textContent = "You lost your $" + minesWager + " wager. Start a new round to try again.";
+    return;
+  }
+
+  minesSafePicks++;
+  tile.classList.add("is-safe");
+  tile.textContent = "SAFE";
+  tile.setAttribute("aria-label", "Safe tile");
+  const multiplier = minesMultiplier();
+  const payout = Math.floor(minesWager * multiplier);
+  minesRoundDisplay.textContent = minesSafePicks + " safe " + (minesSafePicks === 1 ? "pick" : "picks") + " | " + multiplier.toFixed(2) + "x";
+  minesResult.textContent = "Current cash-out: $" + payout + ". Cash out or pick another tile.";
+  updateMinesControls();
+
+  if (minesSafePicks === minesTileCount - minesCount) {
+    cashOutMinesRound(true);
+  }
+}
+
+startMinesButton.addEventListener("click", function () {
+  if (minesRoundActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    minesResult.textContent = validation.error;
+    return;
+  }
+
+  minesWager = validation.wager;
+  minesCount = Number(minesCountInput.value);
+  minesSafePicks = 0;
+  minesLocations = new Set();
+  while (minesLocations.size < minesCount) {
+    minesLocations.add(Math.floor(Math.random() * minesTileCount));
+  }
+  minesTiles.forEach((tile, index) => {
+    tile.disabled = false;
+    tile.textContent = "";
+    tile.classList.remove("is-safe", "is-mine");
+    tile.setAttribute("aria-label", "Hidden tile " + (index + 1));
+  });
+  money -= minesWager;
+  minesRoundActive = true;
+  minesRoundDisplay.textContent = "Pick a tile";
+  minesResult.textContent = "Choose carefully. More mines mean bigger multipliers.";
+  updateMinesControls();
+  updateWalletDisplay();
+});
+
+cashoutMinesButton.addEventListener("click", function () {
+  cashOutMinesRound();
+});
+
+for (const tile of minesTiles) {
+  tile.addEventListener("click", () => selectMinesTile(Number(tile.dataset.minesTile)));
+}
+
 for (const tile of memoryVaultTiles) {
   tile.addEventListener("click", () => selectMemoryVaultTile(Number(tile.dataset.memoryTile)));
 }
@@ -647,13 +777,14 @@ function showCasinoGame(game) {
   slotsGame.hidden = game !== "slots";
   plinkoGame.hidden = game !== "plinko";
   crashGame.hidden = game !== "crash";
+  minesGame.hidden = game !== "mines";
   memoryVaultGame.hidden = game !== "memory-vault";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -920,6 +1051,10 @@ document.getElementById("show-plinko").addEventListener("click", function () {
 
 document.getElementById("show-crash").addEventListener("click", function () {
   showCasinoGame("crash");
+});
+
+document.getElementById("show-mines").addEventListener("click", function () {
+  showCasinoGame("mines");
 });
 
 document.getElementById("show-memory-vault").addEventListener("click", function () {
