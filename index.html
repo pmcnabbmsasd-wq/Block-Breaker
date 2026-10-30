@@ -54,6 +54,7 @@
         <button id="show-plinko" type="button" aria-pressed="false">Plinko</button>
         <button id="show-crash" type="button" aria-pressed="false">Crash</button>
         <button id="show-mines" type="button" aria-pressed="false">Mines</button>
+        <button id="show-horse-race" type="button" aria-pressed="false">Horse Race</button>
         <button id="show-memory-vault" type="button" aria-pressed="false">Memory Vault</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
@@ -190,6 +191,16 @@
         <p id="mines-round" class="mines-status" aria-live="polite">Choose a mine count and set your wager.</p>
         <div id="mines-grid" class="mines-grid" role="group" aria-label="Mines board"></div>
         <p id="mines-result" aria-live="polite">Set your wager to start a round.</p>
+      </div>
+      <div id="horse-race-game" hidden>
+        <p>Pick a horse and place your wager. Higher multipliers are harder to hit.</p>
+        <div class="horse-race-controls">
+          <label for="horse-race-pick">Your horse</label>
+          <select id="horse-race-pick" aria-label="Choose a horse"></select>
+          <button id="start-horse-race" type="button">Place bet &amp; race</button>
+        </div>
+        <div id="horse-race-lanes" class="horse-race-lanes" role="group" aria-label="Horse race track"></div>
+        <p id="horse-race-result" aria-live="polite">Choose a horse, set your wager, and start the race.</p>
       </div>
       <div id="memory-vault-game" hidden>
         <p>Repeat the lights in order. Each cleared round raises your payout; bank it or risk it on a longer sequence.</p>

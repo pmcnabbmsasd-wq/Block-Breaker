@@ -338,6 +338,84 @@ button:focus-visible {
   background: #9c3e36;
 }
 
+.horse-race-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.horse-race-controls label {
+  margin: 0;
+}
+
+.horse-race-controls select {
+  width: auto;
+  min-width: 150px;
+}
+
+.horse-race-controls button {
+  margin-top: 0;
+}
+
+.horse-race-lanes {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 460px);
+  margin: 20px auto;
+  padding: 12px;
+  border: 1px solid #50615d;
+  border-radius: 6px;
+  background: repeating-linear-gradient(0deg, #16211f 0 42px, #1b2926 42px 44px);
+}
+
+.horse-race-lane {
+  display: grid;
+  grid-template-columns: minmax(82px, 1fr) minmax(0, 3fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.horse-race-name {
+  overflow: hidden;
+  color: #e8eee8;
+  font-size: 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.horse-race-track {
+  position: relative;
+  height: 34px;
+  overflow: hidden;
+  border-right: 3px dashed #f0d892;
+  background: repeating-linear-gradient(90deg, #283b35 0 24px, #30453d 24px 48px);
+}
+
+.horse-race-runner {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--horse-color);
+  font-size: 18px;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.horse-race-lane.is-winner .horse-race-name {
+  color: #ffe08a;
+  font-weight: bold;
+}
+
 .memory-vault-round {
   margin: 18px 0 8px;
   color: #ffe08a;

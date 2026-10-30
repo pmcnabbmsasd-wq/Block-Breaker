@@ -37,6 +37,41 @@ const startMinesButton = document.getElementById("start-mines");
 const cashoutMinesButton = document.getElementById("cashout-mines");
 const minesRoundDisplay = document.getElementById("mines-round");
 const minesResult = document.getElementById("mines-result");
+const horseRaceGame = document.getElementById("horse-race-game");
+const horseRacePick = document.getElementById("horse-race-pick");
+const horseRaceStartButton = document.getElementById("start-horse-race");
+const horseRaceLanes = document.getElementById("horse-race-lanes");
+const horseRaceResult = document.getElementById("horse-race-result");
+const horseRaceEntries = [
+  { name: "Comet", odds: 2, color: "#d85c48" },
+  { name: "Pepper", odds: 4, color: "#e4be4d" },
+  { name: "Rocket", odds: 6, color: "#5795cc" },
+  { name: "Clover", odds: 10, color: "#65b783" },
+  { name: "Thunder", odds: 20, color: "#b07ac8" }
+];
+const horseRaceRunners = horseRaceEntries.map((horse, index) => {
+  const option = document.createElement("option");
+  option.value = String(index);
+  option.textContent = horse.name + " - " + horse.odds + "x";
+  horseRacePick.appendChild(option);
+
+  const lane = document.createElement("div");
+  lane.className = "horse-race-lane";
+  const label = document.createElement("span");
+  label.className = "horse-race-name";
+  label.textContent = horse.name + " - " + horse.odds + "x";
+  const track = document.createElement("div");
+  track.className = "horse-race-track";
+  const runner = document.createElement("span");
+  runner.className = "horse-race-runner";
+  runner.setAttribute("aria-hidden", "true");
+  runner.textContent = "🏇";
+  runner.style.setProperty("--horse-color", horse.color);
+  track.appendChild(runner);
+  lane.append(label, track);
+  horseRaceLanes.appendChild(lane);
+  return { ...horse, lane, runner };
+});
 const minesTileCount = 25;
 const minesTiles = Array.from({ length: minesTileCount }, (_, index) => {
   const tile = document.createElement("button");
@@ -117,6 +152,7 @@ let minesWager = 0;
 let minesCount = 3;
 let minesSafePicks = 0;
 let minesLocations = new Set();
+let horseRaceActive = false;
 let memoryVaultActive = false;
 let memoryVaultBusy = false;
 let memoryVaultCanBank = false;
@@ -599,6 +635,77 @@ for (const tile of minesTiles) {
   tile.addEventListener("click", () => selectMinesTile(Number(tile.dataset.minesTile)));
 }
 
+function chooseHorseRaceWinner() {
+  const totalWeight = horseRaceEntries.reduce((total, horse) => total + 1 / horse.odds, 0);
+  let draw = Math.random() * totalWeight;
+  for (const horse of horseRaceEntries) {
+    draw -= 1 / horse.odds;
+    if (draw < 0) return horse;
+  }
+  return horseRaceEntries[horseRaceEntries.length - 1];
+}
+
+async function runHorseRace() {
+  if (horseRaceActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    horseRaceResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const selectedHorse = horseRaceEntries[Number(horseRacePick.value)];
+  const winner = chooseHorseRaceWinner();
+  horseRaceActive = true;
+  horseRaceStartButton.disabled = true;
+  horseRacePick.disabled = true;
+  wagerInput.disabled = true;
+  money -= wager;
+  horseRaceResult.textContent = "And they're off!";
+  updateWalletDisplay();
+
+  const races = horseRaceRunners.map((entry) => {
+    entry.lane.classList.remove("is-winner");
+    entry.runner.getAnimations().forEach((animation) => animation.cancel());
+    entry.runner.style.left = "0%";
+    const duration = entry.name === winner.name ? 3800 : 4300 + Math.random() * 1300;
+    const animation = entry.runner.animate(
+      [
+        { left: "0%" },
+        { left: (14 + Math.random() * 20) + "%" },
+        { left: (42 + Math.random() * 24) + "%" },
+        { left: "calc(100% - 30px)" }
+      ],
+      { duration, easing: "ease-in-out", fill: "forwards" }
+    );
+    return { entry, animation };
+  });
+
+  await Promise.all(races.map(({ animation }) => animation.finished));
+  for (const { entry, animation } of races) {
+    entry.runner.style.left = "calc(100% - 30px)";
+    animation.cancel();
+  }
+
+  const winningEntry = horseRaceRunners.find((entry) => entry.name === winner.name);
+  winningEntry.lane.classList.add("is-winner");
+  if (winner.name === selectedHorse.name) {
+    const payout = Math.floor(wager * winner.odds);
+    money += payout;
+    horseRaceResult.textContent = winner.name + " wins! Your " + winner.odds + "x payout is $" + payout + ".";
+  } else {
+    horseRaceResult.textContent = winner.name + " wins. You picked " + selectedHorse.name + "; your $" + wager + " wager is lost.";
+  }
+
+  horseRaceActive = false;
+  horseRaceStartButton.disabled = false;
+  horseRacePick.disabled = false;
+  wagerInput.disabled = false;
+  updateWalletDisplay();
+}
+
+horseRaceStartButton.addEventListener("click", runHorseRace);
+
 for (const tile of memoryVaultTiles) {
   tile.addEventListener("click", () => selectMemoryVaultTile(Number(tile.dataset.memoryTile)));
 }
@@ -778,13 +885,14 @@ function showCasinoGame(game) {
   plinkoGame.hidden = game !== "plinko";
   crashGame.hidden = game !== "crash";
   minesGame.hidden = game !== "mines";
+  horseRaceGame.hidden = game !== "horse-race";
   memoryVaultGame.hidden = game !== "memory-vault";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "horse-race", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -1055,6 +1163,10 @@ document.getElementById("show-crash").addEventListener("click", function () {
 
 document.getElementById("show-mines").addEventListener("click", function () {
   showCasinoGame("mines");
+});
+
+document.getElementById("show-horse-race").addEventListener("click", function () {
+  showCasinoGame("horse-race");
 });
 
 document.getElementById("show-memory-vault").addEventListener("click", function () {
