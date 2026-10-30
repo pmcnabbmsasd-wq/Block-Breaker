@@ -42,6 +42,12 @@ const horseRacePick = document.getElementById("horse-race-pick");
 const horseRaceStartButton = document.getElementById("start-horse-race");
 const horseRaceLanes = document.getElementById("horse-race-lanes");
 const horseRaceResult = document.getElementById("horse-race-result");
+const sicBoGame = document.getElementById("sic-bo-game");
+const sicBoBet = document.getElementById("sic-bo-bet");
+const sicBoDice = document.getElementById("sic-bo-dice");
+const sicBoDiceElements = [...sicBoDice.querySelectorAll(".sic-bo-die")];
+const rollSicBoButton = document.getElementById("roll-sic-bo");
+const sicBoResult = document.getElementById("sic-bo-result");
 const horseRaceEntries = [
   { name: "Comet", odds: 2, color: "#d85c48" },
   { name: "Pepper", odds: 4, color: "#e4be4d" },
@@ -153,6 +159,7 @@ let minesCount = 3;
 let minesSafePicks = 0;
 let minesLocations = new Set();
 let horseRaceActive = false;
+let sicBoRoundActive = false;
 let memoryVaultActive = false;
 let memoryVaultBusy = false;
 let memoryVaultCanBank = false;
@@ -706,6 +713,56 @@ async function runHorseRace() {
 
 horseRaceStartButton.addEventListener("click", runHorseRace);
 
+const sicBoDieSymbols = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+
+rollSicBoButton.addEventListener("click", async function () {
+  if (sicBoRoundActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    sicBoResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const bet = sicBoBet.value;
+  const roll = Array.from({ length: 3 }, () => Math.floor(Math.random() * 6) + 1);
+  const total = roll.reduce((sum, value) => sum + value, 0);
+  const triple = roll[0] === roll[1] && roll[1] === roll[2];
+  const won = bet === "triple" ? triple : !triple && (bet === "small" ? total <= 10 : total >= 11);
+
+  sicBoRoundActive = true;
+  rollSicBoButton.disabled = true;
+  sicBoBet.disabled = true;
+  wagerInput.disabled = true;
+  money -= wager;
+  sicBoDiceElements.forEach((die) => die.classList.add("is-rolling"));
+  sicBoResult.textContent = "Rolling...";
+  updateWalletDisplay();
+
+  await new Promise((resolve) => setTimeout(resolve, 750));
+
+  sicBoDiceElements.forEach((die, index) => {
+    die.classList.remove("is-rolling");
+    die.textContent = sicBoDieSymbols[roll[index] - 1];
+  });
+  sicBoDice.setAttribute("aria-label", "Dice show " + roll.join(", ") + ", total " + total);
+
+  if (won) {
+    const multiplier = bet === "triple" ? 31 : 2;
+    const payout = wager * multiplier;
+    money += payout;
+    sicBoResult.textContent = "Rolled " + roll.join(", ") + " (" + total + "). You won $" + payout + " at " + multiplier + "x.";
+  } else {
+    sicBoResult.textContent = "Rolled " + roll.join(", ") + " (" + total + "). You lost your $" + wager + " wager.";
+  }
+
+  sicBoRoundActive = false;
+  rollSicBoButton.disabled = false;
+  sicBoBet.disabled = false;
+  wagerInput.disabled = false;
+  updateWalletDisplay();
+});
+
 for (const tile of memoryVaultTiles) {
   tile.addEventListener("click", () => selectMemoryVaultTile(Number(tile.dataset.memoryTile)));
 }
@@ -886,13 +943,14 @@ function showCasinoGame(game) {
   crashGame.hidden = game !== "crash";
   minesGame.hidden = game !== "mines";
   horseRaceGame.hidden = game !== "horse-race";
+  sicBoGame.hidden = game !== "sic-bo";
   memoryVaultGame.hidden = game !== "memory-vault";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "horse-race", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "horse-race", "sic-bo", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -1167,6 +1225,10 @@ document.getElementById("show-mines").addEventListener("click", function () {
 
 document.getElementById("show-horse-race").addEventListener("click", function () {
   showCasinoGame("horse-race");
+});
+
+document.getElementById("show-sic-bo").addEventListener("click", function () {
+  showCasinoGame("sic-bo");
 });
 
 document.getElementById("show-memory-vault").addEventListener("click", function () {

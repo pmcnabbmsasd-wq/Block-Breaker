@@ -55,6 +55,7 @@
         <button id="show-crash" type="button" aria-pressed="false">Crash</button>
         <button id="show-mines" type="button" aria-pressed="false">Mines</button>
         <button id="show-horse-race" type="button" aria-pressed="false">Horse Race</button>
+        <button id="show-sic-bo" type="button" aria-pressed="false">Sic Bo</button>
         <button id="show-memory-vault" type="button" aria-pressed="false">Memory Vault</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
@@ -201,6 +202,22 @@
         </div>
         <div id="horse-race-lanes" class="horse-race-lanes" role="group" aria-label="Horse race track"></div>
         <p id="horse-race-result" aria-live="polite">Choose a horse, set your wager, and start the race.</p>
+      </div>
+      <div id="sic-bo-game" hidden>
+        <p>Roll three dice. Small and Big pay 1:1; any triple pays 30:1. Triples lose on Small and Big.</p>
+        <label for="sic-bo-bet">Bet on</label>
+        <select id="sic-bo-bet">
+          <option value="small">Small (4-10)</option>
+          <option value="big">Big (11-17)</option>
+          <option value="triple">Any triple</option>
+        </select>
+        <div id="sic-bo-dice" class="sic-bo-dice" role="img" aria-label="Three dice ready to roll">
+          <span class="sic-bo-die" aria-hidden="true">⚀</span>
+          <span class="sic-bo-die" aria-hidden="true">⚁</span>
+          <span class="sic-bo-die" aria-hidden="true">⚂</span>
+        </div>
+        <button id="roll-sic-bo" type="button">Roll dice</button>
+        <p id="sic-bo-result" aria-live="polite">Choose a bet and set your wager.</p>
       </div>
       <div id="memory-vault-game" hidden>
         <p>Repeat the lights in order. Each cleared round raises your payout; bank it or risk it on a longer sequence.</p>
