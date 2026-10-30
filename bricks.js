@@ -58,13 +58,13 @@ class LevelBrickCreator extends BrickCreator {
   createBrick(position, level, index) {
     let powerUp = null;
     if (level === 6 && position.row === 2) {
-      powerUp = "extraLife";
+      powerUp = "1up";
     } else if (index === 10) {
       powerUp = "multiball";
     } else if (index === 21) {
       powerUp = "tnt";
     } else if (index === 5 && level % 2 === 0) {
-      powerUp = "extraLife";
+      powerUp = "1up";
     } else if (index === 26 && level === 3) {
       powerUp = "grenade";
     }
@@ -83,7 +83,7 @@ function drawBricks() {
       ctx.font = "bold 11px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const label = brick.powerUp === "multiball" ? "+2" : brick.powerUp === "grenade" ? "GRENADE" : brick.powerUp === "extraLife" ? "1UP" : "TNT";
+      const label = brick.powerUp === "multiball" ? "+2" : brick.powerUp === "grenade" ? "GRENADE" : brick.powerUp === "1up" ? "1UP" : "TNT";
       ctx.fillText(label, brick.x + brick.width / 2, brick.y + brick.height / 2);
     }
   }

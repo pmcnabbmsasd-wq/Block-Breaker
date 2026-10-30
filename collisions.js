@@ -53,7 +53,7 @@ function removeBrick(brick) {
   }
 
   bricks.splice(brickIndex, 1);
-  money += 10;
+  money += brick.powerUp ? 20 : 10;
   updateWalletDisplay();
   gameState.combo++;
 
@@ -138,7 +138,7 @@ function bounceOffBricks(targetBall = ball) {
         explodeNearbyBricks(brick);
       }
 
-      if (brick.powerUp === "extraLife") {
+      if (brick.powerUp === "1up") {
         respawnsLeft++;
       } else if (!grenadeDetonated && brick.powerUp === "multiball") {
         spawnExtraBalls(targetBall);
