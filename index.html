@@ -49,6 +49,7 @@
       <div class="casino-games" aria-label="Casino games">
         <button id="show-roulette" type="button" aria-pressed="false">Roulette</button>
         <button id="show-blackjack" type="button" aria-pressed="false">Blackjack</button>
+        <button id="show-baccarat" type="button" aria-pressed="false">Baccarat</button>
         <button id="show-poker" type="button" aria-pressed="false">Poker</button>
         <button id="show-slots" type="button" aria-pressed="true">Slots</button>
         <button id="show-plinko" type="button" aria-pressed="false">Plinko</button>
@@ -97,6 +98,29 @@
         <button id="hit-blackjack" type="button" disabled>Hit</button>
         <button id="stand-blackjack" type="button" disabled>Stand</button>
         <p id="blackjack-result" aria-live="polite">Place your bet and deal to start.</p>
+      </div>
+      <div id="baccarat-game" hidden>
+        <p>Bet on Player or Banker to win, or Tie. Banker wins return 1.95x; ties return 9x. Player and Banker bets push on a tie.</p>
+        <label for="baccarat-bet">Bet on</label>
+        <select id="baccarat-bet">
+          <option value="player">Player</option>
+          <option value="banker">Banker</option>
+          <option value="tie">Tie</option>
+        </select>
+        <div class="blackjack-table baccarat-table" role="group" aria-label="Baccarat table">
+          <section class="hand-area" aria-labelledby="baccarat-player-heading">
+            <h2 id="baccarat-player-heading">Player</h2>
+            <div id="baccarat-player-hand" class="card-hand" aria-label="Player cards"></div>
+            <p id="baccarat-player-total" aria-live="polite">Total: 0</p>
+          </section>
+          <section class="hand-area" aria-labelledby="baccarat-banker-heading">
+            <h2 id="baccarat-banker-heading">Banker</h2>
+            <div id="baccarat-banker-hand" class="card-hand" aria-label="Banker cards"></div>
+            <p id="baccarat-banker-total" aria-live="polite">Total: 0</p>
+          </section>
+        </div>
+        <button id="deal-baccarat" type="button">Deal hand</button>
+        <p id="baccarat-result" aria-live="polite">Place your bet and deal to start.</p>
       </div>
       <div id="poker-game" hidden>
         <p>Texas Hold'em against three computer players. Your wager is your buy-in for the hand.</p>

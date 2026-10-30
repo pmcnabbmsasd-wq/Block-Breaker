@@ -15,6 +15,14 @@ const casinoResult = document.getElementById("casino-result");
 const spinButton = document.getElementById("spin-roulette");
 const rouletteGame = document.getElementById("roulette-game");
 const blackjackGame = document.getElementById("blackjack-game");
+const baccaratGame = document.getElementById("baccarat-game");
+const baccaratBet = document.getElementById("baccarat-bet");
+const dealBaccaratButton = document.getElementById("deal-baccarat");
+const baccaratPlayerCards = document.getElementById("baccarat-player-hand");
+const baccaratBankerCards = document.getElementById("baccarat-banker-hand");
+const baccaratPlayerTotal = document.getElementById("baccarat-player-total");
+const baccaratBankerTotal = document.getElementById("baccarat-banker-total");
+const baccaratResult = document.getElementById("baccarat-result");
 const pokerGame = document.getElementById("poker-game");
 const slotsGame = document.getElementById("slots-game");
 const plinkoGame = document.getElementById("plinko-game");
@@ -141,6 +149,8 @@ let playerHand = [];
 let dealerHand = [];
 let blackjackWager = 0;
 let blackjackRoundActive = false;
+let baccaratDeck = [];
+let baccaratRoundActive = false;
 let coinRotation = 0;
 let cupPositions = [0, 1, 2];
 let ballCupIndex = 0;
@@ -937,6 +947,7 @@ function applyPaddleBallSkin(skin) {
 function showCasinoGame(game) {
   rouletteGame.hidden = game !== "roulette";
   blackjackGame.hidden = game !== "blackjack";
+  baccaratGame.hidden = game !== "baccarat";
   pokerGame.hidden = game !== "poker";
   slotsGame.hidden = game !== "slots";
   plinkoGame.hidden = game !== "plinko";
@@ -950,7 +961,7 @@ function showCasinoGame(game) {
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "poker", "slots", "plinko", "crash", "mines", "horse-race", "sic-bo", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "baccarat", "poker", "slots", "plinko", "crash", "mines", "horse-race", "sic-bo", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -1110,6 +1121,96 @@ function renderHand(container, hand, hideCards = false) {
   });
 }
 
+function baccaratCardValue(card) {
+  if (card.rank === "A") return 1;
+  if (["10", "J", "Q", "K"].includes(card.rank)) return 0;
+  return Number(card.rank);
+}
+
+function baccaratHandValue(hand) {
+  return hand.reduce((total, card) => total + baccaratCardValue(card), 0) % 10;
+}
+
+function baccaratBankerShouldDraw(bankerTotal, playerThirdCardValue) {
+  if (playerThirdCardValue === null) return bankerTotal <= 5;
+  if (bankerTotal <= 2) return true;
+  if (bankerTotal === 3) return playerThirdCardValue !== 8;
+  if (bankerTotal === 4) return playerThirdCardValue >= 2 && playerThirdCardValue <= 7;
+  if (bankerTotal === 5) return playerThirdCardValue >= 4 && playerThirdCardValue <= 7;
+  if (bankerTotal === 6) return playerThirdCardValue === 6 || playerThirdCardValue === 7;
+  return false;
+}
+
+function drawBaccaratCard() {
+  if (baccaratDeck.length === 0) {
+    baccaratDeck = createShuffledDeck();
+  }
+  return baccaratDeck.pop();
+}
+
+dealBaccaratButton.addEventListener("click", async function () {
+  if (baccaratRoundActive) return;
+  const validation = validateWager();
+  if (validation.error) {
+    baccaratResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  const bet = baccaratBet.value;
+  const playerHand = [drawBaccaratCard(), drawBaccaratCard()];
+  const bankerHand = [drawBaccaratCard(), drawBaccaratCard()];
+  let playerTotal = baccaratHandValue(playerHand);
+  let bankerTotal = baccaratHandValue(bankerHand);
+  let playerThirdCardValue = null;
+
+  if (playerTotal < 8 && bankerTotal < 8) {
+    if (playerTotal <= 5) {
+      const playerThirdCard = drawBaccaratCard();
+      playerHand.push(playerThirdCard);
+      playerThirdCardValue = baccaratCardValue(playerThirdCard);
+    }
+    if (baccaratBankerShouldDraw(bankerTotal, playerThirdCardValue)) {
+      bankerHand.push(drawBaccaratCard());
+    }
+  }
+
+  playerTotal = baccaratHandValue(playerHand);
+  bankerTotal = baccaratHandValue(bankerHand);
+  baccaratRoundActive = true;
+  dealBaccaratButton.disabled = true;
+  baccaratBet.disabled = true;
+  wagerInput.disabled = true;
+  money -= wager;
+  baccaratResult.textContent = "Dealing...";
+  renderHand(baccaratPlayerCards, playerHand);
+  renderHand(baccaratBankerCards, bankerHand);
+  baccaratPlayerTotal.textContent = "Total: " + playerTotal;
+  baccaratBankerTotal.textContent = "Total: " + bankerTotal;
+  updateWalletDisplay();
+
+  await Promise.all([...baccaratPlayerCards.children, ...baccaratBankerCards.children].map(animateDealerCard));
+
+  const winner = playerTotal === bankerTotal ? "tie" : playerTotal > bankerTotal ? "player" : "banker";
+  if (winner === "tie" && bet !== "tie") {
+    money += wager;
+    baccaratResult.textContent = "Tie at " + playerTotal + ". Your wager is returned.";
+  } else if (winner === bet) {
+    const multiplier = bet === "tie" ? 9 : bet === "banker" ? 1.95 : 2;
+    const payout = Math.floor(wager * multiplier);
+    money += payout;
+    baccaratResult.textContent = winner.charAt(0).toUpperCase() + winner.slice(1) + " wins at " + playerTotal + ". You received $" + payout + " at " + multiplier + "x.";
+  } else {
+    baccaratResult.textContent = winner.charAt(0).toUpperCase() + winner.slice(1) + " wins at " + (winner === "player" ? playerTotal : bankerTotal) + ". You lost your $" + wager + " wager.";
+  }
+
+  baccaratRoundActive = false;
+  dealBaccaratButton.disabled = false;
+  baccaratBet.disabled = false;
+  wagerInput.disabled = false;
+  updateWalletDisplay();
+});
+
 function renderBlackjackHands(revealDealer = false) {
   const dealerElement = document.getElementById("dealer-hand");
   const playerElement = document.getElementById("player-hand");
@@ -1201,6 +1302,10 @@ document.getElementById("show-roulette").addEventListener("click", function () {
 
 document.getElementById("show-blackjack").addEventListener("click", function () {
   showCasinoGame("blackjack");
+});
+
+document.getElementById("show-baccarat").addEventListener("click", function () {
+  showCasinoGame("baccarat");
 });
 
 document.getElementById("show-poker").addEventListener("click", function () {
