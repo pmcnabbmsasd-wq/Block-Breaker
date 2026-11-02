@@ -56,6 +56,10 @@ const sicBoDice = document.getElementById("sic-bo-dice");
 const sicBoDiceElements = [...sicBoDice.querySelectorAll(".sic-bo-die")];
 const rollSicBoButton = document.getElementById("roll-sic-bo");
 const sicBoResult = document.getElementById("sic-bo-result");
+const kenoGame = document.getElementById("keno-game");
+const kenoGrid = document.getElementById("keno-grid");
+const drawKenoButton = document.getElementById("draw-keno");
+const kenoResult = document.getElementById("keno-result");
 const horseRaceEntries = [
   { name: "Comet", odds: 2, color: "#d85c48" },
   { name: "Pepper", odds: 4, color: "#e4be4d" },
@@ -95,6 +99,18 @@ const minesTiles = Array.from({ length: minesTileCount }, (_, index) => {
   tile.setAttribute("aria-label", "Hidden tile " + (index + 1));
   tile.disabled = true;
   minesGrid.appendChild(tile);
+  return tile;
+});
+const kenoNumbers = Array.from({ length: 40 }, (_, index) => {
+  const number = index + 1;
+  const tile = document.createElement("button");
+  tile.type = "button";
+  tile.className = "keno-number";
+  tile.textContent = String(number);
+  tile.setAttribute("aria-label", "Keno number " + number);
+  tile.setAttribute("aria-pressed", "false");
+  tile.addEventListener("click", () => toggleKenoNumber(number, tile));
+  kenoGrid.appendChild(tile);
   return tile;
 });
 const memoryVaultGame = document.getElementById("memory-vault-game");
@@ -170,6 +186,8 @@ let minesSafePicks = 0;
 let minesLocations = new Set();
 let horseRaceActive = false;
 let sicBoRoundActive = false;
+let kenoRoundActive = false;
+const kenoSelection = new Set();
 let memoryVaultActive = false;
 let memoryVaultBusy = false;
 let memoryVaultCanBank = false;
@@ -773,6 +791,95 @@ rollSicBoButton.addEventListener("click", async function () {
   updateWalletDisplay();
 });
 
+function toggleKenoNumber(number, tile) {
+  if (kenoRoundActive) {
+    return;
+  }
+
+  kenoNumbers.forEach((kenoTile) => kenoTile.classList.remove("is-drawn", "is-hit"));
+  if (kenoSelection.has(number)) {
+    kenoSelection.delete(number);
+    tile.classList.remove("is-selected");
+    tile.setAttribute("aria-pressed", "false");
+  } else if (kenoSelection.size < 5) {
+    kenoSelection.add(number);
+    tile.classList.add("is-selected");
+    tile.setAttribute("aria-pressed", "true");
+  }
+
+  drawKenoButton.disabled = kenoSelection.size !== 5;
+  kenoResult.textContent = kenoSelection.size === 5
+    ? "Your 5 numbers are selected. Set your wager and draw."
+    : "Choose " + (5 - kenoSelection.size) + " more number" + (kenoSelection.size === 4 ? "" : "s") + ".";
+}
+
+function drawKenoNumbers() {
+  const numbers = Array.from({ length: 40 }, (_, index) => index + 1);
+  for (let index = numbers.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [numbers[index], numbers[swapIndex]] = [numbers[swapIndex], numbers[index]];
+  }
+  return numbers.slice(0, 10);
+}
+
+drawKenoButton.addEventListener("click", async function () {
+  if (kenoRoundActive || kenoSelection.size !== 5) {
+    return;
+  }
+
+  const validation = validateWager();
+  if (validation.error) {
+    kenoResult.textContent = validation.error;
+    return;
+  }
+
+  const wager = validation.wager;
+  if (!Number.isSafeInteger(money - wager + wager * 500)) {
+    kenoResult.textContent = "That wager is too large for the maximum Keno payout.";
+    return;
+  }
+
+  const drawnNumbers = drawKenoNumbers();
+  const drawnSet = new Set(drawnNumbers);
+  const matches = [...kenoSelection].filter((number) => drawnSet.has(number)).length;
+  const payoutMultipliers = { 3: 5, 4: 30, 5: 500 };
+  const multiplier = payoutMultipliers[matches] || 0;
+
+  kenoRoundActive = true;
+  drawKenoButton.disabled = true;
+  kenoNumbers.forEach((tile) => {
+    tile.disabled = true;
+    tile.classList.remove("is-drawn", "is-hit");
+  });
+  wagerInput.disabled = true;
+  money -= wager;
+  updateWalletDisplay();
+  kenoResult.textContent = "Drawing numbers...";
+
+  for (const number of drawnNumbers) {
+    const tile = kenoNumbers[number - 1];
+    tile.classList.add("is-drawn");
+    if (kenoSelection.has(number)) {
+      tile.classList.add("is-hit");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+
+  if (multiplier > 0) {
+    const payout = wager * multiplier;
+    money += payout;
+    kenoResult.textContent = "Draw: " + drawnNumbers.join(", ") + ". " + matches + " matches: you receive $" + payout + " (" + multiplier + "x).";
+  } else {
+    kenoResult.textContent = "Draw: " + drawnNumbers.join(", ") + ". " + matches + " matches. You lost your $" + wager + " wager.";
+  }
+
+  kenoRoundActive = false;
+  kenoNumbers.forEach((tile) => { tile.disabled = false; });
+  wagerInput.disabled = false;
+  drawKenoButton.disabled = false;
+  updateWalletDisplay();
+});
+
 for (const tile of memoryVaultTiles) {
   tile.addEventListener("click", () => selectMemoryVaultTile(Number(tile.dataset.memoryTile)));
 }
@@ -956,13 +1063,14 @@ function showCasinoGame(game) {
   minesGame.hidden = game !== "mines";
   horseRaceGame.hidden = game !== "horse-race";
   sicBoGame.hidden = game !== "sic-bo";
+  kenoGame.hidden = game !== "keno";
   memoryVaultGame.hidden = game !== "memory-vault";
   coinFlipGame.hidden = game !== "coin-flip";
   cupBallGame.hidden = game !== "cup-ball";
   caseOpeningGame.hidden = game !== "case-opening";
   paddleBallCaseGame.hidden = game !== "paddle-ball-case";
   casinoScreen.classList.toggle("poker-active", game === "poker");
-  for (const name of ["roulette", "blackjack", "baccarat", "poker", "slots", "plinko", "crash", "mines", "horse-race", "sic-bo", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
+  for (const name of ["roulette", "blackjack", "baccarat", "poker", "slots", "plinko", "crash", "mines", "horse-race", "sic-bo", "keno", "memory-vault", "coin-flip", "cup-ball", "case-opening", "paddle-ball-case"]) {
     const button = document.getElementById("show-" + name);
     if (button) {
       button.setAttribute("aria-pressed", String(name === game));
@@ -1335,6 +1443,10 @@ document.getElementById("show-horse-race").addEventListener("click", function ()
 
 document.getElementById("show-sic-bo").addEventListener("click", function () {
   showCasinoGame("sic-bo");
+});
+
+document.getElementById("show-keno").addEventListener("click", function () {
+  showCasinoGame("keno");
 });
 
 document.getElementById("show-memory-vault").addEventListener("click", function () {

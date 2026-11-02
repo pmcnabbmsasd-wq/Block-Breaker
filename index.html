@@ -57,6 +57,7 @@
         <button id="show-mines" type="button" aria-pressed="false">Mines</button>
         <button id="show-horse-race" type="button" aria-pressed="false">Horse Race</button>
         <button id="show-sic-bo" type="button" aria-pressed="false">Sic Bo</button>
+        <button id="show-keno" type="button" aria-pressed="false">Keno</button>
         <button id="show-memory-vault" type="button" aria-pressed="false">Memory Vault</button>
         <button id="show-coin-flip" type="button" aria-pressed="false">Coin Flip</button>
         <button id="show-cup-ball" type="button" aria-pressed="false">Cup &amp; Ball</button>
@@ -242,6 +243,12 @@
         </div>
         <button id="roll-sic-bo" type="button">Roll dice</button>
         <p id="sic-bo-result" aria-live="polite">Choose a bet and set your wager.</p>
+      </div>
+      <div id="keno-game" hidden>
+        <p>Choose 5 numbers from 1 to 40. Ten numbers are drawn. Fewer than 3 matches lose; 3 return 5x, 4 return 30x, and 5 return 500x. Payouts include your wager.</p>
+        <div id="keno-grid" class="keno-grid" role="group" aria-label="Choose 5 Keno numbers"></div>
+        <button id="draw-keno" type="button" disabled>Draw numbers</button>
+        <p id="keno-result" aria-live="polite">Choose 5 numbers and set your wager.</p>
       </div>
       <div id="memory-vault-game" hidden>
         <p>Repeat the lights in order. Each cleared round raises your payout; bank it or risk it on a longer sequence.</p>

@@ -12,4 +12,6 @@ turn. The dealer reveals their hand after you stand or bust.
 Slots is also available with animated reels: three matching symbols pay 5×
 the wager and two matching symbols pay 2×, including the returned stake.
 Coin Flip lets you wager on heads or tails with a visible animated coin; a
-correct guess pays 1:1, with the original wager returned.
+correct guess pays 1:1, with the original wager returned. Keno lets you choose
+five numbers from 1 to 40 and match them against a draw of ten; three or more
+matches pay according to the displayed multiplier.

@@ -445,6 +445,54 @@ button:focus-visible {
   animation: sic-bo-roll 160ms ease-in-out infinite alternate;
 }
 
+.keno-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 400px);
+  margin: 20px auto;
+}
+
+.keno-number {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid #627078;
+  border-radius: 50%;
+  background: #202a31;
+  color: #f1f3f5;
+  font-size: 14px;
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.keno-number.is-selected {
+  border-color: #82e1ed;
+  background: #176f8a;
+}
+
+.keno-number.is-drawn {
+  border-color: #f3c35f;
+  background: #9a6d25;
+  animation: keno-draw 180ms ease-out;
+}
+
+.keno-number.is-hit {
+  border-color: #b6efbf;
+  background: #39834b;
+}
+
+.keno-number:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+@keyframes keno-draw {
+  from { transform: scale(0.82); }
+  to { transform: scale(1); }
+}
+
 @keyframes sic-bo-roll {
   from { transform: translateY(-3px) rotate(-8deg); }
   to { transform: translateY(3px) rotate(8deg); }
