@@ -9,6 +9,33 @@ const inventoryList = document.getElementById("inventory-list");
 const inventoryEmpty = document.getElementById("inventory-empty");
 const openInventoryButton = document.getElementById("open-inventory");
 const inventoryMenuButton = document.getElementById("inventory-menu");
+const statsScreen = document.getElementById("stats-screen");
+const openStatsButton = document.getElementById("open-stats");
+const statsMenuButton = document.getElementById("stats-menu");
+const statsGainsDisplay = document.getElementById("stats-gains");
+const statsLossesDisplay = document.getElementById("stats-losses");
+const statsNetDisplay = document.getElementById("stats-net");
+const casinoStatsBody = document.getElementById("casino-stats-body");
+const CASINO_STATS_STORAGE_KEY = "block-breaker-casino-stats";
+const CASINO_GAME_ENTRIES = [
+  { id: "roulette", label: "Roulette" },
+  { id: "blackjack", label: "Blackjack" },
+  { id: "baccarat", label: "Baccarat" },
+  { id: "poker", label: "Poker" },
+  { id: "slots", label: "Slots" },
+  { id: "plinko", label: "Plinko" },
+  { id: "crash", label: "Crash" },
+  { id: "mines", label: "Mines" },
+  { id: "horse-race", label: "Horse Race" },
+  { id: "sic-bo", label: "Sic Bo" },
+  { id: "keno", label: "Keno" },
+  { id: "memory-vault", label: "Memory Vault" },
+  { id: "coin-flip", label: "Coin Flip" },
+  { id: "cup-ball", label: "Cup & Ball" },
+  { id: "case-opening", label: "Case Opening" },
+  { id: "paddle-ball-case", label: "Paddle & Ball Case" }
+];
+let casinoStats = restoreCasinoStats();
 const wagerInput = document.getElementById("wager");
 const rouletteBet = document.getElementById("roulette-bet");
 const casinoResult = document.getElementById("casino-result");
@@ -451,13 +478,14 @@ function finishCrashRound(cashedOut, multiplier) {
   startCrashButton.disabled = false;
   cashoutCrashButton.disabled = true;
 
+  const payout = cashedOut ? Math.floor(crashWager * multiplier) : 0;
   if (cashedOut) {
-    const payout = Math.floor(crashWager * multiplier);
     money += payout;
     crashResult.textContent = "Cashed out at " + multiplier.toFixed(2) + "x. Returned $" + payout + " ($" + (payout - crashWager) + " profit).";
   } else {
     crashResult.textContent = "Crashed at " + multiplier.toFixed(2) + "x. You lost $" + crashWager + ".";
   }
+  recordCasinoRound("crash", crashWager, payout);
   updateWalletDisplay();
 }
 
@@ -531,6 +559,7 @@ async function selectMemoryVaultTile(tileIndex) {
     memoryVaultBusy = false;
     memoryVaultCanBank = false;
     memoryVaultSequence = [];
+    recordCasinoRound("memory-vault", memoryVaultWager, 0);
     memoryVaultRoundDisplay.textContent = "Vault locked";
     memoryVaultResult.textContent = "Wrong tile. You lost $" + memoryVaultWager + ". Start a new run to try again.";
     updateMemoryVaultControls();
@@ -555,6 +584,7 @@ function bankMemoryVaultPayout() {
   const multiplier = memoryVaultMultiplier();
   const payout = Math.floor(memoryVaultWager * multiplier);
   money += payout;
+  recordCasinoRound("memory-vault", memoryVaultWager, payout);
   memoryVaultActive = false;
   memoryVaultCanBank = false;
   memoryVaultRoundDisplay.textContent = "Banked at round " + memoryVaultRound;
@@ -598,6 +628,7 @@ function cashOutMinesRound(allSafeTilesFound = false) {
   const multiplier = minesMultiplier();
   const payout = Math.floor(minesWager * multiplier);
   money += payout;
+  recordCasinoRound("mines", minesWager, payout);
   finishMinesRound();
   minesRoundDisplay.textContent = "Cashed out at " + multiplier.toFixed(2) + "x";
   minesResult.textContent = (allSafeTilesFound ? "All safe tiles found! " : "Cashed out! ") +
@@ -613,6 +644,7 @@ function selectMinesTile(tileIndex) {
     tile.textContent = "MINE";
     tile.setAttribute("aria-label", "Mine");
     finishMinesRound();
+    recordCasinoRound("mines", minesWager, 0);
     minesRoundDisplay.textContent = "Mine hit";
     minesResult.textContent = "You lost your $" + minesWager + " wager. Start a new round to try again.";
     return;
@@ -724,13 +756,15 @@ async function runHorseRace() {
 
   const winningEntry = horseRaceRunners.find((entry) => entry.name === winner.name);
   winningEntry.lane.classList.add("is-winner");
+  let payout = 0;
   if (winner.name === selectedHorse.name) {
-    const payout = Math.floor(wager * winner.odds);
+    payout = Math.floor(wager * winner.odds);
     money += payout;
     horseRaceResult.textContent = winner.name + " wins! Your " + winner.odds + "x payout is $" + payout + ".";
   } else {
     horseRaceResult.textContent = winner.name + " wins. You picked " + selectedHorse.name + "; your $" + wager + " wager is lost.";
   }
+  recordCasinoRound("horse-race", wager, payout);
 
   horseRaceActive = false;
   horseRaceStartButton.disabled = false;
@@ -775,14 +809,16 @@ rollSicBoButton.addEventListener("click", async function () {
   });
   sicBoDice.setAttribute("aria-label", "Dice show " + roll.join(", ") + ", total " + total);
 
+  let payout = 0;
   if (won) {
     const multiplier = bet === "triple" ? 31 : 2;
-    const payout = wager * multiplier;
+    payout = wager * multiplier;
     money += payout;
     sicBoResult.textContent = "Rolled " + roll.join(", ") + " (" + total + "). You won $" + payout + " at " + multiplier + "x.";
   } else {
     sicBoResult.textContent = "Rolled " + roll.join(", ") + " (" + total + "). You lost your $" + wager + " wager.";
   }
+  recordCasinoRound("sic-bo", wager, payout);
 
   sicBoRoundActive = false;
   rollSicBoButton.disabled = false;
@@ -865,13 +901,15 @@ drawKenoButton.addEventListener("click", async function () {
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
 
+  let payout = 0;
   if (multiplier > 0) {
-    const payout = wager * multiplier;
+    payout = wager * multiplier;
     money += payout;
     kenoResult.textContent = "Draw: " + drawnNumbers.join(", ") + ". " + matches + " matches: you receive $" + payout + " (" + multiplier + "x).";
   } else {
     kenoResult.textContent = "Draw: " + drawnNumbers.join(", ") + ". " + matches + " matches. You lost your $" + wager + " wager.";
   }
+  recordCasinoRound("keno", wager, payout);
 
   kenoRoundActive = false;
   kenoNumbers.forEach((tile) => { tile.disabled = false; });
@@ -909,6 +947,97 @@ function updateWalletDisplay() {
   inventoryWallet.textContent = balance;
   casinoWallet.textContent = balance;
   saveGameProgress();
+}
+
+function emptyCasinoStats() {
+  return Object.fromEntries(CASINO_GAME_ENTRIES.map(({ id }) => [id, { gains: 0, losses: 0, rounds: 0 }]));
+}
+
+function restoreCasinoStats() {
+  const stats = emptyCasinoStats();
+  try {
+    const saved = JSON.parse(localStorage.getItem(CASINO_STATS_STORAGE_KEY) || "null");
+    for (const { id } of CASINO_GAME_ENTRIES) {
+      const savedGame = saved && saved[id];
+      if (!savedGame) continue;
+      for (const field of ["gains", "losses", "rounds"]) {
+        if (Number.isSafeInteger(savedGame[field]) && savedGame[field] >= 0) {
+          stats[id][field] = savedGame[field];
+        }
+      }
+    }
+  } catch (error) {
+    console.warn("Could not restore casino stats:", error);
+  }
+  return stats;
+}
+
+function formatCasinoMoney(amount, signed = false) {
+  const formatted = Math.abs(amount).toLocaleString("en-US");
+  if (amount < 0) return "-$" + formatted;
+  return (signed && amount > 0 ? "+$" : "$") + formatted;
+}
+
+function renderCasinoStats() {
+  let totalGains = 0;
+  let totalLosses = 0;
+  casinoStatsBody.replaceChildren();
+
+  for (const { id, label } of CASINO_GAME_ENTRIES) {
+    const gameStats = casinoStats[id];
+    const net = gameStats.gains - gameStats.losses;
+    totalGains += gameStats.gains;
+    totalLosses += gameStats.losses;
+
+    const row = document.createElement("tr");
+    const name = document.createElement("th");
+    name.scope = "row";
+    name.textContent = label;
+    row.appendChild(name);
+    const values = [
+      { amount: gameStats.gains, tone: "stats-positive", signed: false },
+      { amount: gameStats.losses, tone: "stats-negative", signed: false },
+      { amount: net, tone: net > 0 ? "stats-positive" : "stats-negative", signed: true }
+    ];
+    for (const value of values) {
+      const cell = document.createElement("td");
+      cell.textContent = formatCasinoMoney(value.amount, value.signed);
+      if (value.amount !== 0) cell.classList.add(value.tone);
+      row.appendChild(cell);
+    }
+    casinoStatsBody.appendChild(row);
+  }
+
+  statsGainsDisplay.textContent = formatCasinoMoney(totalGains);
+  statsLossesDisplay.textContent = formatCasinoMoney(totalLosses);
+  const net = totalGains - totalLosses;
+  statsNetDisplay.textContent = formatCasinoMoney(net, true);
+  statsNetDisplay.classList.toggle("stats-positive", net > 0);
+  statsNetDisplay.classList.toggle("stats-negative", net < 0);
+}
+
+function recordCasinoRound(gameId, wager, payout) {
+  const gameStats = casinoStats[gameId];
+  if (!gameStats || !Number.isSafeInteger(wager) || wager < 0 || !Number.isSafeInteger(payout) || payout < 0) {
+    return;
+  }
+
+  const net = payout - wager;
+  if (net > 0) {
+    gameStats.gains += net;
+  } else {
+    gameStats.losses -= net;
+  }
+  gameStats.rounds++;
+
+  try {
+    localStorage.setItem(CASINO_STATS_STORAGE_KEY, JSON.stringify(casinoStats));
+  } catch (error) {
+    console.warn("Could not save casino stats:", error);
+  }
+  if (!statsScreen.hidden) {
+    renderCasinoStats();
+  }
 }
 
 function validateWager() {
@@ -1082,9 +1211,13 @@ function showScreen(screenName) {
   activeScreen = screenName;
   mainMenu.hidden = screenName !== "menu";
   inventoryScreen.hidden = screenName !== "inventory";
+  statsScreen.hidden = screenName !== "stats";
   gameScreen.hidden = screenName !== "game";
   casinoScreen.hidden = screenName !== "casino";
   updateWalletDisplay();
+  if (screenName === "stats") {
+    renderCasinoStats();
+  }
 }
 
 document.getElementById("play-game").addEventListener("click", function () {
@@ -1101,6 +1234,14 @@ document.getElementById("open-casino").addEventListener("click", function () {
 openInventoryButton.addEventListener("click", function () {
   renderPaddleBallInventory();
   showScreen("inventory");
+});
+
+openStatsButton.addEventListener("click", function () {
+  showScreen("stats");
+});
+
+statsMenuButton.addEventListener("click", function () {
+  showScreen("menu");
 });
 
 inventoryMenuButton.addEventListener("click", function () {
@@ -1153,13 +1294,16 @@ spinButton.addEventListener("click", async function () {
   try {
     await spinWheelToPocket(pocket);
 
+    let payout = 0;
     if (color === bet) {
       const winnings = wager * (bet === "green" ? 35 : 1);
-      money += wager + winnings;
+      payout = wager + winnings;
+      money += payout;
       casinoResult.textContent = "Pocket " + pocket + " is " + color + "! You won $" + winnings + ".";
     } else {
       casinoResult.textContent = "Pocket " + pocket + " is " + color + ". You lost $" + wager + ".";
     }
+    recordCasinoRound("roulette", wager, payout);
   } finally {
     spinButton.disabled = false;
     updateWalletDisplay();
@@ -1301,17 +1445,20 @@ dealBaccaratButton.addEventListener("click", async function () {
   await Promise.all([...baccaratPlayerCards.children, ...baccaratBankerCards.children].map(animateDealerCard));
 
   const winner = playerTotal === bankerTotal ? "tie" : playerTotal > bankerTotal ? "player" : "banker";
+  let payout = 0;
   if (winner === "tie" && bet !== "tie") {
-    money += wager;
+    payout = wager;
+    money += payout;
     baccaratResult.textContent = "Tie at " + playerTotal + ". Your wager is returned.";
   } else if (winner === bet) {
     const multiplier = bet === "tie" ? 9 : bet === "banker" ? 1.95 : 2;
-    const payout = Math.floor(wager * multiplier);
+    payout = Math.floor(wager * multiplier);
     money += payout;
     baccaratResult.textContent = winner.charAt(0).toUpperCase() + winner.slice(1) + " wins at " + playerTotal + ". You received $" + payout + " at " + multiplier + "x.";
   } else {
     baccaratResult.textContent = winner.charAt(0).toUpperCase() + winner.slice(1) + " wins at " + (winner === "player" ? playerTotal : bankerTotal) + ". You lost your $" + wager + " wager.";
   }
+  recordCasinoRound("baccarat", wager, payout);
 
   baccaratRoundActive = false;
   dealBaccaratButton.disabled = false;
@@ -1359,19 +1506,23 @@ function finishBlackjackRound(outcome) {
   document.getElementById("stand-blackjack").disabled = true;
   document.getElementById("deal-blackjack").disabled = false;
 
+  let payout = 0;
   if (outcome === "win") {
     const isBlackjack = handValue(playerHand) === 21 && playerHand.length === 2;
     const winnings = isBlackjack ? Math.floor(blackjackWager * 1.5) : blackjackWager;
-    money += blackjackWager + winnings;
+    payout = blackjackWager + winnings;
+    money += payout;
     document.getElementById("blackjack-result").textContent =
       (isBlackjack ? "Blackjack! " : "You win! ") + "You won $" + winnings + ".";
   } else if (outcome === "push") {
-    money += blackjackWager;
+    payout = blackjackWager;
+    money += payout;
     document.getElementById("blackjack-result").textContent = "Push. Your $" + blackjackWager + " bet is returned.";
   } else {
     document.getElementById("blackjack-result").textContent =
       outcome === "bust" ? "You busted. You lost $" + blackjackWager + "." : "Dealer wins. You lost $" + blackjackWager + ".";
   }
+  recordCasinoRound("blackjack", blackjackWager, payout);
   updateWalletDisplay();
 }
 
@@ -1551,17 +1702,19 @@ slotsButton.addEventListener("click", async function () {
       counts.set(symbol, (counts.get(symbol) || 0) + 1);
     }
     const matchCount = Math.max(...counts.values());
+    let payout = 0;
     if (matchCount === 3) {
-      const payout = wager * 5;
+      payout = wager * 5;
       money += payout;
       result.textContent = symbols.join(" ") + " — three of a kind! You won $" + (payout - wager) + ".";
     } else if (matchCount === 2) {
-      const payout = wager * 2;
+      payout = wager * 2;
       money += payout;
       result.textContent = symbols.join(" ") + " — two match! You won $" + (payout - wager) + ".";
     } else {
       result.textContent = symbols.join(" ") + " — no match. You lost $" + wager + ".";
     }
+    recordCasinoRound("slots", wager, payout);
   } finally {
     slotsButton.disabled = false;
     updateWalletDisplay();
@@ -1603,6 +1756,7 @@ dropPlinkoButton.addEventListener("click", async function () {
   try {
     await animatePlinkoDrops(drops);
     money += totalPayout;
+    recordCasinoRound("plinko", totalWager, totalPayout);
     const outcomes = drops.map((drop) => plinkoMultipliers[drop.bucketIndex] + "x").join(", ");
     const net = totalPayout - totalWager;
     plinkoResult.textContent = outcomes + " pockets. Total payout: $" + totalPayout + "; " + (net >= 0 ? "net win: $" + net : "net loss: $" + -net) + ".";
@@ -1696,6 +1850,7 @@ openCaseButton.addEventListener("click", async function () {
   try {
     await spinCaseReel(casePrizeTable, prize, caseReel, caseReelTrack, caseDisplay, caseFace, quickOpenCase.checked);
     money += prize.value;
+    recordCasinoRound("case-opening", caseCost, prize.value);
     document.getElementById("case-reveal").textContent = prize.name + " — $" + prize.value;
     caseOpeningResult.textContent = "You opened " + prize.name + " for $" + prize.value + ".";
     updateWalletDisplay();
@@ -1798,6 +1953,7 @@ openPaddleBallCaseButton.addEventListener("click", async function () {
   }
 
   money -= caseCost;
+  recordCasinoRound("paddle-ball-case", caseCost, 0);
   updateWalletDisplay();
   paddleBallCaseDisplay.classList.remove("revealed");
   paddleBallCaseDisplay.classList.add("spinning");
@@ -1858,12 +2014,15 @@ coinButton.addEventListener("click", async function () {
     animation.cancel();
     document.querySelector(".coin-stage").setAttribute("aria-label", "Coin showing " + outcome);
 
+    let payout = 0;
     if (outcome === guess) {
-      money += wager * 2;
+      payout = wager * 2;
+      money += payout;
       result.textContent = "It’s " + outcome + "! You won $" + wager + ".";
     } else {
       result.textContent = "It’s " + outcome + ". You lost $" + wager + ".";
     }
+    recordCasinoRound("coin-flip", wager, payout);
   } finally {
     coinButton.disabled = false;
     updateWalletDisplay();
@@ -1930,13 +2089,16 @@ async function revealCupBallChoice(selectedCup) {
   cupBall.style.left = cupSlotCenter(cupPositions[ballCupIndex]) + "px";
   cupBall.style.top = "124px";
   cupBall.style.visibility = "visible";
+  let payout = 0;
   if (selectedCup === ballCupIndex) {
     const winnings = cupBallWager * 2;
-    money += cupBallWager + winnings;
+    payout = cupBallWager + winnings;
+    money += payout;
     cupBallResult.textContent = "You found the ball under Cup " + (selectedCup + 1) + "! You won $" + winnings + ".";
   } else {
     cupBallResult.textContent = "The ball was under Cup " + (ballCupIndex + 1) + ". You lost $" + cupBallWager + ".";
   }
+  recordCasinoRound("cup-ball", cupBallWager, payout);
   updateWalletDisplay();
   startCupBallButton.disabled = false;
 }

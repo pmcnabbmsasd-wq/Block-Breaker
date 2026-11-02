@@ -15,6 +15,7 @@
         <button id="play-game" type="button">Play Block Breaker</button>
         <button id="open-casino" type="button">Casino</button>
         <button id="open-inventory" type="button">Inventory</button>
+        <button id="open-stats" type="button">Stats</button>
       </div>
       <section class="settings" aria-labelledby="settings-title">
         <h2 id="settings-title">Settings</h2>
@@ -35,6 +36,35 @@
       <div id="inventory-list" class="inventory-grid" role="list" aria-label="Owned paddle and ball skins"></div>
       <p id="inventory-empty">Open a Paddle &amp; Ball Case to unlock more skins.</p>
       <button id="inventory-menu" type="button">Main menu</button>
+    </section>
+
+    <section id="stats-screen" hidden aria-labelledby="stats-title">
+      <h1 id="stats-title">Casino Stats</h1>
+      <div class="stats-summary" aria-live="polite">
+        <article class="stats-total">
+          <h2>Total Gains</h2>
+          <p id="stats-gains" class="stats-positive">$0</p>
+        </article>
+        <article class="stats-total">
+          <h2>Total Losses</h2>
+          <p id="stats-losses" class="stats-negative">$0</p>
+        </article>
+        <article class="stats-total">
+          <h2>Net Profit / Loss</h2>
+          <p id="stats-net">$0</p>
+        </article>
+      </div>
+      <p class="stats-note">Net is cash returned minus wager. Cosmetic prizes are not counted as cash gains.</p>
+      <h2>Results by Game</h2>
+      <div class="stats-table-wrap">
+        <table class="stats-table">
+          <thead>
+            <tr><th scope="col">Game</th><th scope="col">Gains</th><th scope="col">Losses</th><th scope="col">Net</th></tr>
+          </thead>
+          <tbody id="casino-stats-body"></tbody>
+        </table>
+      </div>
+      <button id="stats-menu" type="button">Main menu</button>
     </section>
 
     <section id="game-screen" hidden aria-label="Block Breaker game">

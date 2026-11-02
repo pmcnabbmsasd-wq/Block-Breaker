@@ -275,6 +275,9 @@ function settlePokerHand(winners, message, revealCards = true) {
   pokerCurrentSeat = null;
   pokerShowdown = revealCards;
   pokerPlayers[0].status = winners.some((winner) => winner.human) ? "Winner" : pokerPlayers[0].status;
+  const playerPayout = pokerPlayers[0].stack;
+  money += playerPayout;
+  recordCasinoRound("poker", pokerBuyIn, playerPayout);
   pokerResult.textContent = message;
   pokerStartButton.disabled = false;
   pokerStartButton.textContent = "Deal next hand";
