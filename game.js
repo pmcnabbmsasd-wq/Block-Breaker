@@ -128,6 +128,7 @@ const grenadeDrops = [];
 const bossLasers = [];
 const STARTING_RESPAWNS = 15;
 const TOTAL_LEVELS = 16;
+const GAME_PROGRESS_STORAGE_KEY = "block-breaker-progress";
 let respawnsLeft = STARTING_RESPAWNS;
 let gameOver = false;
 let gameWon = false;
@@ -135,6 +136,35 @@ let isPaused = false;
 let currentLevel = 1;
 let levelTransitionTicks = 0;
 let boss = null;
+
+function saveGameProgress() {
+  try {
+    localStorage.setItem(GAME_PROGRESS_STORAGE_KEY, JSON.stringify({ money, currentLevel }));
+  } catch (error) {
+    console.warn("Could not save game progress:", error);
+  }
+}
+
+function restoreGameProgress() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GAME_PROGRESS_STORAGE_KEY) || "null");
+    if (!saved) {
+      return;
+    }
+
+    if (Number.isSafeInteger(saved.money) && saved.money >= 0) {
+      money = saved.money;
+    }
+    if (Number.isSafeInteger(saved.currentLevel) && saved.currentLevel >= 1 && saved.currentLevel <= TOTAL_LEVELS) {
+      currentLevel = saved.currentLevel;
+    }
+  } catch (error) {
+    console.warn("Could not restore game progress:", error);
+  }
+}
+
+restoreGameProgress();
+window.addEventListener("pagehide", saveGameProgress);
 
 
 // ------------------------------------------------------------
@@ -523,6 +553,10 @@ function pauseGame() {
 
 function restartGame() {
   currentLevel = 1;
+  prepareGame();
+}
+
+function prepareGame() {
   levelTransitionTicks = 0;
   isPaused = false;
   gameState.reset();
@@ -556,6 +590,7 @@ function startLevel() {
   paddle.x = WIDTH / 2 - paddle.width / 2;
   extraBalls.length = 0;
   resetBall();
+  saveGameProgress();
 }
 
 canvas.addEventListener("click", function () {

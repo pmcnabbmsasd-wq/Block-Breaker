@@ -801,6 +801,7 @@ function updateWalletDisplay() {
   menuWallet.textContent = balance;
   inventoryWallet.textContent = balance;
   casinoWallet.textContent = balance;
+  saveGameProgress();
 }
 
 function validateWager() {
@@ -979,7 +980,7 @@ function showScreen(screenName) {
 }
 
 document.getElementById("play-game").addEventListener("click", function () {
-  restartGame();
+  prepareGame();
   startBallFromSky();
   showScreen("game");
 });
