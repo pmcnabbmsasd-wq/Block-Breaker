@@ -23,6 +23,7 @@ class GameState {
     }
 
     this.combo = 0;
+    this.comboTimer = 0;
     this.paddleHits = 0;
     GameState.instance = this;
   }
@@ -33,10 +34,34 @@ class GameState {
 
   resetCombo() {
     this.combo = 0;
+    this.comboTimer = 0;
+  }
+
+  registerBrickBreak(targetBall) {
+    this.combo++;
+    this.comboTimer = 180;
+
+    if (this.combo >= 3) {
+      const currentSpeed = Math.hypot(targetBall.vx, targetBall.vy);
+      const speedIncrease = this.combo === 3 ? 1.5 : 0.1;
+      const speedScale = (currentSpeed + speedIncrease) / currentSpeed;
+      targetBall.vx *= speedScale;
+      targetBall.vy *= speedScale;
+    }
+  }
+
+  tickCombo() {
+    if (this.comboTimer > 0) {
+      this.comboTimer--;
+      if (this.comboTimer === 0) {
+        this.combo = 0;
+      }
+    }
   }
 
   reset() {
     this.combo = 0;
+    this.comboTimer = 0;
     this.paddleHits = 0;
   }
 }
@@ -216,6 +241,8 @@ function update() {
     updateParticles();
     return;
   }
+
+  gameState.tickCombo();
 
   if (bricks.length === 0 && !boss) {
     if (currentLevel === TOTAL_LEVELS) {

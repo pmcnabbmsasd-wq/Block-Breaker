@@ -46,7 +46,7 @@ function bounceOffPaddle(targetBall = ball) {
   }
 }
 
-function removeBrick(brick) {
+function removeBrick(brick, targetBall = ball) {
   const brickIndex = bricks.indexOf(brick);
   if (brickIndex === -1) {
     return false;
@@ -55,7 +55,7 @@ function removeBrick(brick) {
   bricks.splice(brickIndex, 1);
   money += brick.powerUp ? 20 : 10;
   updateWalletDisplay();
-  gameState.combo++;
+  gameState.registerBrickBreak(targetBall);
 
   for (let i = 0; i < 10; i++) {
     const angle = Math.random() * Math.PI * 2;
@@ -76,7 +76,7 @@ function removeBrick(brick) {
   return true;
 }
 
-function explodeNearbyBricks(centerBrick) {
+function explodeNearbyBricks(centerBrick, targetBall) {
   const distanceFromCenter = (brick) =>
     Math.abs(brick.row - centerBrick.row) + Math.abs(brick.col - centerBrick.col);
   const directionOrder = (brick) => {
@@ -93,7 +93,7 @@ function explodeNearbyBricks(centerBrick) {
     });
 
   for (const neighbor of neighbors.slice(0, 2)) {
-    removeBrick(neighbor);
+    removeBrick(neighbor, targetBall);
   }
 }
 
@@ -137,11 +137,11 @@ function bounceOffBricks(targetBall = ball) {
       }
     }
 
-    if (removeBrick(brick)) {
+    if (removeBrick(brick, targetBall)) {
       const grenadeDetonated = targetBall.grenadeArmed;
       if (grenadeDetonated) {
         targetBall.grenadeArmed = false;
-        explodeNearbyBricks(brick);
+        explodeNearbyBricks(brick, targetBall);
       }
 
       if (brick.powerUp === "1up") {
@@ -149,7 +149,7 @@ function bounceOffBricks(targetBall = ball) {
       } else if (!grenadeDetonated && brick.powerUp === "multiball") {
         spawnExtraBalls(targetBall);
       } else if (!grenadeDetonated && brick.powerUp === "tnt") {
-        explodeNearbyBricks(brick);
+        explodeNearbyBricks(brick, targetBall);
       } else if (!grenadeDetonated && brick.powerUp === "grenade") {
         dropGrenade(brick);
       }
