@@ -112,6 +112,12 @@ function setSpawnVelocity(verticalSpeed) {
   ball.vy = speed * Math.cos(BALL_SPAWN_ANGLE);
 }
 
+function getBallSpeedMultiplier(targetBall = ball) {
+  const baseSpeed = Math.hypot(BALL_SPAWN_BASE_VX, BALL_SPEED + (currentLevel - 1) * 0.35);
+  const currentSpeed = Math.hypot(targetBall.vx, targetBall.vy);
+  return currentSpeed === 0 ? 1 : currentSpeed / baseSpeed;
+}
+
 function startBallFromSky() {
   ball.x = paddle.x + paddle.width / 2 - ball.width / 2;
   const brickBottom = bricks.reduce((lowest, brick) => Math.max(lowest, brick.y + brick.height), 0);
@@ -511,7 +517,8 @@ function draw() {
   ctx.fillText("Level: " + currentLevel + "/" + TOTAL_LEVELS, WIDTH / 2 - 50, 30);
   ctx.font = "14px sans-serif";
   ctx.fillText("Combo: " + gameState.combo, 20, 52);
-  ctx.fillText("Paddle hits: " + gameState.paddleHits, 125, 52);
+  ctx.fillText("Speed: " + getBallSpeedMultiplier().toFixed(1) + "x", 105, 52);
+  ctx.fillText("Paddle hits: " + gameState.paddleHits, 225, 52);
 
   if (gameWon) {
     ctx.textAlign = "center";
