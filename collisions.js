@@ -57,13 +57,19 @@ function removeBrick(brick) {
   updateWalletDisplay();
   gameState.combo++;
 
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1.2 + Math.random() * 2.2;
+    const life = 12 + Math.random() * 8;
     particles.push({
       x: brick.x + brick.width / 2,
       y: brick.y + brick.height / 2,
-      vx: (Math.random() - 0.5) * 4,
-      vy: (Math.random() - 0.5) * 4,
-      life: 15
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life,
+      maxLife: life,
+      size: 2 + Math.random() * 2,
+      color: brick.powerUp ? "#aaa" : "white"
     });
   }
 

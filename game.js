@@ -455,6 +455,7 @@ function updateParticles() {
     const particle = particles[i];
     particle.x = particle.x + particle.vx;
     particle.y = particle.y + particle.vy;
+    particle.vy += 0.08;
     particle.life = particle.life - 1;
 
     if (particle.life <= 0) {
@@ -465,9 +466,11 @@ function updateParticles() {
 
 function drawParticles() {
   for (const particle of particles) {
-    ctx.fillStyle = "rgba(255, 255, 255, " + particle.life / 15 + ")";
-    ctx.fillRect(particle.x, particle.y, 3, 3);
+    ctx.globalAlpha = particle.life / particle.maxLife;
+    ctx.fillStyle = particle.color;
+    ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
   }
+  ctx.globalAlpha = 1;
 }
 
 function draw() {
