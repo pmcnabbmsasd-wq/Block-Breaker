@@ -154,6 +154,7 @@ let bricks = [];
 let money = 0;
 let activeScreen = "menu";
 const particles = [];
+const floatingTexts = [];
 const extraBalls = [];
 const grenadeDrops = [];
 const bossLasers = [];
@@ -495,6 +496,16 @@ function updateParticles() {
       particles.splice(i, 1);
     }
   }
+
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const text = floatingTexts[i];
+    text.y -= 0.8;
+    text.life--;
+
+    if (text.life <= 0) {
+      floatingTexts.splice(i, 1);
+    }
+  }
 }
 
 function drawParticles() {
@@ -504,6 +515,18 @@ function drawParticles() {
     ctx.fillRect(particle.x, particle.y, particle.size, particle.size);
   }
   ctx.globalAlpha = 1;
+
+  ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const text of floatingTexts) {
+    ctx.globalAlpha = text.life / text.maxLife;
+    ctx.fillStyle = "#7ee34b";
+    ctx.fillText(text.label, text.x, text.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
 }
 
 function draw() {
@@ -602,6 +625,7 @@ function prepareGame() {
   gameWon = false;
   extraBalls.length = 0;
   particles.length = 0;
+  floatingTexts.length = 0;
   startLevel();
 }
 

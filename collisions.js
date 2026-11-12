@@ -56,6 +56,13 @@ function removeBrick(brick, targetBall = ball) {
   money += brick.powerUp ? 20 : 10;
   updateWalletDisplay();
   gameState.registerBrickBreak(targetBall);
+  floatingTexts.push({
+    label: "+$10",
+    x: brick.x + brick.width / 2,
+    y: brick.y + brick.height / 2,
+    life: 45,
+    maxLife: 45
+  });
 
   for (let i = 0; i < 10; i++) {
     const angle = Math.random() * Math.PI * 2;
